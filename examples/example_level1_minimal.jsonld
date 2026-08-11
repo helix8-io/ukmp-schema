@@ -1,0 +1,35 @@
+{
+  "@context": [
+    "https://schema.materialspassport.org.uk/v0.1/context.jsonld"
+  ],
+  "type": "ukmp:MaterialPassport",
+  "passportId": "https://passports.example-sme.co.uk/passports/urn:uuid:2c9d4a10-77b1-4e5f-8c33-6f0a2d9b1e57",
+  "subjectType": "MaterialBatch",
+  "alternativeId": {
+    "scheme": "internal-batch-ref",
+    "value": "PP-2026-0142"
+  },
+  "conformanceLevel": 1,
+  "issuerParty": {
+    "name": "Example SME Reprocessing Ltd",
+    "role": "reprocessor"
+  },
+  "issueDate": "2026-08-10",
+  "description": "500 kg mixed post-consumer PP regrind, grey, injection-moulding grade (self-declared)",
+  "composition": {
+    "materialFamily": "polymer",
+    "substances": [
+      { "name": "Polypropylene", "massFraction": 0.97 },
+      { "name": "Residual contamination (non-target polymer)", "massFraction": 0.03 }
+    ]
+  },
+  "recycledContent": {
+    "preConsumerFraction": 0.05,
+    "postConsumerFraction": 0.95,
+    "totalRecycledFraction": 1.0,
+    "calculationMethod": "declared",
+    "evidenceType": "supplier-declaration",
+    "evidenceRefs": ["https://passports.example-sme.co.uk/declarations/PP-2026-0142.pdf"],
+    "verificationStatus": "self-declared"
+  }
+}

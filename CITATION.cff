@@ -1,0 +1,36 @@
+cff-version: 1.2.0
+message: "If you use the UK Materials Passport Schema, please cite it as below."
+title: "UK Materials Passport Schema (ukmp)"
+version: 0.1.0
+date-released: 2026-08-11
+type: dataset
+authors:
+  - family-names: Harrison
+    given-names: John
+    affiliation: "Helix8 Ltd"
+  - name: "Helix8 Ltd"
+    website: "https://www.materiai.co.uk"
+abstract: >-
+  An open JSON-LD data format for describing the composition, origin,
+  processing history, recycled content, and environmental footprint of a
+  material moving between organisations in a circular-economy supply chain.
+  Extends the CIRPASS-2 Digital Product Passport framework with UK-specific
+  fields, expresses processing history as GS1 EPCIS 2.0 events, and uses the
+  W3C Verifiable Credentials v2.0 trust envelope. Work package 1 deliverable
+  of the Innovate UK feasibility study "Interoperable Materials Passport
+  Infrastructure for UK Circular Economy (Materials 4.0 Focus)".
+keywords:
+  - materials passport
+  - digital product passport
+  - circular economy
+  - recycled content
+  - JSON-LD
+  - EPCIS
+  - verifiable credentials
+  - Materials 4.0
+license: Apache-2.0
+url: "https://www.materiai.co.uk"
+identifiers:
+  - type: other
+    value: "Innovate UK project 10188380"
+    description: "National Materials Innovation Programme Feasibility Studies"

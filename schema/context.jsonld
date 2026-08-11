@@ -1,0 +1,114 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "@protected": true,
+
+    "ukmp": "https://schema.materialspassport.org.uk/v0.1/",
+    "gs1": "https://gs1.org/voc/",
+    "cred": "https://www.w3.org/2018/credentials#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+
+    "MaterialPassportCredential": "ukmp:MaterialPassportCredential",
+
+    "MaterialPassport": {
+      "@id": "ukmp:MaterialPassport",
+      "@context": {
+        "@version": 1.1,
+        "@protected": true,
+
+        "passportId": { "@id": "ukmp:passportId", "@type": "@id" },
+        "subjectType": "ukmp:subjectType",
+        "alternativeId": { "@id": "ukmp:alternativeId", "@type": "@id" },
+        "sectorProfile": { "@id": "ukmp:sectorProfile", "@type": "@id" },
+        "conformanceLevel": { "@id": "ukmp:conformanceLevel", "@type": "xsd:integer" },
+        "issuerParty": { "@id": "ukmp:issuerParty", "@type": "@id" },
+        "issueDate": { "@id": "ukmp:issueDate", "@type": "xsd:date" },
+        "lastUpdated": { "@id": "ukmp:lastUpdated", "@type": "xsd:dateTime" },
+        "composition": { "@id": "ukmp:composition", "@type": "@id" },
+        "recycledContent": { "@id": "ukmp:recycledContent", "@type": "@id" },
+        "processingHistory": { "@id": "ukmp:processingHistory", "@type": "@id" },
+        "environmentalFootprint": { "@id": "ukmp:environmentalFootprint", "@type": "@id" },
+        "ukRegulatory": { "@id": "ukmp:ukRegulatory", "@type": "@id" }
+      }
+    },
+
+    "Party": "ukmp:Party",
+    "role": "ukmp:role",
+    "scheme": "ukmp:scheme",
+    "value": "ukmp:value",
+
+    "Composition": "ukmp:Composition",
+    "materialFamily": "ukmp:materialFamily",
+    "substances": { "@id": "ukmp:substances", "@container": "@set" },
+    "casNumber": "ukmp:casNumber",
+    "ecNumber": "ukmp:ecNumber",
+    "massFraction": { "@id": "ukmp:massFraction", "@type": "xsd:decimal" },
+    "svhcFlag": { "@id": "ukmp:svhcFlag", "@type": "xsd:boolean" },
+
+    "RecycledContentClaim": "ukmp:RecycledContentClaim",
+    "preConsumerFraction": { "@id": "ukmp:preConsumerFraction", "@type": "xsd:decimal" },
+    "postConsumerFraction": { "@id": "ukmp:postConsumerFraction", "@type": "xsd:decimal" },
+    "totalRecycledFraction": { "@id": "ukmp:totalRecycledFraction", "@type": "xsd:decimal" },
+    "calculationMethod": "ukmp:calculationMethod",
+    "chainOfCustodyModel": "ukmp:chainOfCustodyModel",
+    "evidenceType": "ukmp:evidenceType",
+    "evidenceRefs": { "@id": "ukmp:evidenceRefs", "@type": "@id", "@container": "@set" },
+    "verificationStatus": "ukmp:verificationStatus",
+    "verifierParty": { "@id": "ukmp:verifierParty", "@type": "@id" },
+
+    "epcisEvents": { "@id": "ukmp:epcisEvents", "@container": "@list" },
+    "traversable": { "@id": "ukmp:traversable", "@type": "xsd:boolean" },
+    "eventID": { "@id": "ukmp:eventID", "@type": "@id" },
+    "bizStep": "ukmp:bizStep",
+    "eventTime": { "@id": "ukmp:eventTime", "@type": "xsd:dateTime" },
+    "ukmp:massBalanceDelta": {
+      "@id": "ukmp:massBalanceDelta",
+      "@context": {
+        "inputKg": { "@id": "ukmp:inputKg", "@type": "xsd:decimal" },
+        "outputKg": { "@id": "ukmp:outputKg", "@type": "xsd:decimal" },
+        "wasteKg": { "@id": "ukmp:wasteKg", "@type": "xsd:decimal" }
+      }
+    },
+    "ukmp:verificationExtension": {
+      "@id": "ukmp:verificationExtension",
+      "@context": {
+        "instrument": "ukmp:instrument",
+        "measuredPolymerClass": "ukmp:measuredPolymerClass",
+        "contaminationLevel": { "@id": "ukmp:contaminationLevel", "@type": "xsd:decimal" }
+      }
+    },
+
+    "LcaSummary": "ukmp:LcaSummary",
+    "carbonFootprintKgCo2ePerKg": { "@id": "ukmp:carbonFootprintKgCo2ePerKg", "@type": "xsd:decimal" },
+    "assessmentBoundary": "ukmp:assessmentBoundary",
+    "methodology": "ukmp:methodology",
+    "characterisationFactors": "ukmp:characterisationFactors",
+    "dataQualityRating": { "@id": "ukmp:dataQualityRating", "@type": "xsd:integer" },
+    "primaryDataFraction": { "@id": "ukmp:primaryDataFraction", "@type": "xsd:decimal" },
+    "energySource": { "@id": "ukmp:energySource", "@type": "@id" },
+    "gridKwh": { "@id": "ukmp:gridKwh", "@type": "xsd:decimal" },
+    "onSiteRenewablesKwh": { "@id": "ukmp:onSiteRenewablesKwh", "@type": "xsd:decimal" },
+    "virginDisplacementFactor": { "@id": "ukmp:virginDisplacementFactor", "@type": "@id" },
+    "unit": "ukmp:unit",
+    "source": "ukmp:source",
+
+    "UkRegulatoryData": "ukmp:UkRegulatoryData",
+    "ewcCode": "ukmp:ewcCode",
+    "endOfWasteStatus": { "@id": "ukmp:endOfWasteStatus", "@type": "@id" },
+    "achieved": { "@id": "ukmp:achieved", "@type": "xsd:boolean" },
+    "basis": "ukmp:basis",
+    "atEvent": { "@id": "ukmp:atEvent", "@type": "@id" },
+    "wasteHierarchyPosition": "ukmp:wasteHierarchyPosition",
+    "recoveryCode": "ukmp:recoveryCode",
+    "pptStatus": { "@id": "ukmp:pptStatus", "@type": "@id" },
+    "inScope": { "@id": "ukmp:inScope", "@type": "xsd:boolean" },
+    "recycledFractionForPpt": { "@id": "ukmp:recycledFractionForPpt", "@type": "xsd:decimal" },
+    "evidenceRef": { "@id": "ukmp:evidenceRef", "@type": "@id" },
+    "eprCategory": "ukmp:eprCategory",
+    "permits": { "@id": "ukmp:permits", "@container": "@set" },
+    "ref": "ukmp:ref",
+    "euMapping": { "@id": "ukmp:euMapping", "@type": "@id" },
+    "esprCategory": "ukmp:esprCategory",
+    "ppwrRecyclabilityGrade": "ukmp:ppwrRecyclabilityGrade"
+  }
+}

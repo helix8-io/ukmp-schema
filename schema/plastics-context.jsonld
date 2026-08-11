@@ -1,0 +1,27 @@
+{
+  "title": "UK Materials Passport — plastics sector profile context (ukmp-plastics) v0.1",
+  "description": "Sector extension terms for the plastics/polymers profile (normative in v0.1, validated in WP4). polymerType uses ISO 1043 abbreviated terms (PET, HDPE, LDPE, PP, PS, PVC, other); form is one of bale, flake, pellet, regrind; foodContactGrade pairs with foodContactAssessmentRef; additives entries may carry name, casNumber, massFraction.",
+  "@context": {
+    "@version": 1.1,
+    "@protected": true,
+
+    "ukmp-plastics": "https://schema.materialspassport.org.uk/v0.1/plastics/",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+
+    "ukmp-plastics:polymerType": { "@id": "ukmp-plastics:polymerType" },
+    "ukmp-plastics:form": { "@id": "ukmp-plastics:form" },
+    "ukmp-plastics:colour": { "@id": "ukmp-plastics:colour" },
+    "ukmp-plastics:foodContactGrade": {
+      "@id": "ukmp-plastics:foodContactGrade",
+      "@type": "xsd:boolean"
+    },
+    "ukmp-plastics:foodContactAssessmentRef": {
+      "@id": "ukmp-plastics:foodContactAssessmentRef",
+      "@type": "@id"
+    },
+    "ukmp-plastics:additives": {
+      "@id": "ukmp-plastics:additives",
+      "@container": "@set"
+    }
+  }
+}

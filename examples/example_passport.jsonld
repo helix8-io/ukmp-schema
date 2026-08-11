@@ -1,0 +1,107 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/credentials/v2",
+    "https://ref.gs1.org/standards/epcis/epcis-context.jsonld",
+    "https://schema.materialspassport.org.uk/v0.1/context.jsonld",
+    "https://schema.materialspassport.org.uk/v0.1/plastics-context.jsonld"
+  ],
+  "id": "https://passports.example-recycler.co.uk/passports/urn:uuid:8f2b7c1e-4d3a-4f6b-9e2d-1a5c7b9d0e42",
+  "type": ["VerifiableCredential", "MaterialPassportCredential"],
+  "issuer": {
+    "id": "https://passports.example-recycler.co.uk/issuer",
+    "name": "Example Recycler Ltd",
+    "gs1:gln": "5060123456789"
+  },
+  "validFrom": "2026-08-03T14:22:00Z",
+  "credentialStatus": {
+    "id": "https://passports.example-recycler.co.uk/status/3#94567",
+    "type": "BitstringStatusListEntry",
+    "statusPurpose": "revocation",
+    "statusListIndex": "94567",
+    "statusListCredential": "https://passports.example-recycler.co.uk/status/3"
+  },
+  "credentialSubject": {
+    "type": "ukmp:MaterialPassport",
+    "passportId": "https://id.gs1.org/01/05060987654321/10/B26-0803-HD",
+    "subjectType": "MaterialBatch",
+    "gs1:lgtin": "05060987654321.B26-0803-HD",
+    "sectorProfile": "https://schema.materialspassport.org.uk/v0.1/profiles/plastics",
+    "conformanceLevel": 3,
+    "issuerParty": {
+      "name": "Example Recycler Ltd",
+      "gs1:gln": "5060123456789",
+      "role": "reprocessor"
+    },
+    "issueDate": "2026-08-03",
+    "lastUpdated": "2026-08-03T14:22:00Z",
+    "description": "1,000 kg post-consumer recycled HDPE pellet, natural, extrusion grade",
+    "composition": {
+      "materialFamily": "polymer",
+      "ukmp-plastics:polymerType": "HDPE",
+      "ukmp-plastics:form": "pellet",
+      "ukmp-plastics:colour": "natural",
+      "ukmp-plastics:foodContactGrade": false,
+      "substances": [
+        { "name": "High-density polyethylene", "massFraction": 0.985 },
+        { "name": "Process stabiliser package", "massFraction": 0.012, "svhcFlag": false },
+        { "name": "Residual contamination (non-target polymer)", "massFraction": 0.003 }
+      ]
+    },
+    "recycledContent": {
+      "preConsumerFraction": 0.0,
+      "postConsumerFraction": 0.87,
+      "totalRecycledFraction": 0.87,
+      "calculationMethod": "mass-balance",
+      "chainOfCustodyModel": "mass-balance",
+      "evidenceType": "epcis-event-chain",
+      "evidenceRefs": [
+        "urn:uuid:e1-intake-2026-07-28",
+        "urn:uuid:e4-transform-shred-2026-07-30",
+        "urn:uuid:e6-transform-extrude-2026-08-01",
+        "urn:uuid:e8-blend-2026-08-02"
+      ],
+      "verificationStatus": "evidence-linked"
+    },
+    "processingHistory": {
+      "epcisEvents": [
+        { "eventID": "urn:uuid:e1-intake-2026-07-28", "type": "ObjectEvent", "bizStep": "receiving", "eventTime": "2026-07-28T08:05:00Z", "inputNote": "PC HDPE bales, 1,240 kg, supplier GLN 5060555000018" },
+        { "eventID": "urn:uuid:e2-inspect-2026-07-28", "type": "ObjectEvent", "bizStep": "inspecting", "eventTime": "2026-07-28T09:40:00Z", "ukmp:verificationExtension": { "instrument": "NIR", "measuredPolymerClass": "HDPE", "contaminationLevel": 0.041 } },
+        { "eventID": "urn:uuid:e3-sort-2026-07-29", "type": "ObjectEvent", "bizStep": "inspecting", "eventTime": "2026-07-29T11:00:00Z" },
+        { "eventID": "urn:uuid:e4-transform-shred-2026-07-30", "type": "TransformationEvent", "bizStep": "transforming", "eventTime": "2026-07-30T10:15:00Z", "ukmp:massBalanceDelta": { "inputKg": 1240, "outputKg": 1176, "wasteKg": 64 } },
+        { "eventID": "urn:uuid:e5-wash-2026-07-31", "type": "TransformationEvent", "bizStep": "transforming", "eventTime": "2026-07-31T09:00:00Z", "ukmp:massBalanceDelta": { "inputKg": 1176, "outputKg": 1128, "wasteKg": 48 } },
+        { "eventID": "urn:uuid:e6-transform-extrude-2026-08-01", "type": "TransformationEvent", "bizStep": "transforming", "eventTime": "2026-08-01T13:30:00Z", "ukmp:massBalanceDelta": { "inputKg": 1128, "outputKg": 1102, "wasteKg": 26 } },
+        { "eventID": "urn:uuid:e8-blend-2026-08-02", "type": "TransformationEvent", "bizStep": "transforming", "eventTime": "2026-08-02T10:45:00Z", "note": "Blend: 890 kg PCR + 130 kg virgin carrier", "ukmp:massBalanceDelta": { "inputKg": 1020, "outputKg": 1004, "wasteKg": 16 } },
+        { "eventID": "urn:uuid:e9-pack-2026-08-02", "type": "AggregationEvent", "bizStep": "packing", "eventTime": "2026-08-02T15:20:00Z", "note": "40 × 25 kg bags, SSCC 350601234500000021" },
+        { "eventID": "urn:uuid:e10-ship-2026-08-03", "type": "ObjectEvent", "bizStep": "shipping", "eventTime": "2026-08-03T08:10:00Z", "destinationGln": "5060777000023" }
+      ],
+      "traversable": true
+    },
+    "environmentalFootprint": {
+      "carbonFootprintKgCo2ePerKg": 0.42,
+      "assessmentBoundary": "cradle-to-gate",
+      "methodology": "ISO 14067",
+      "dataQualityRating": 3,
+      "primaryDataFraction": 0.78,
+      "energySource": { "gridKwh": 412, "onSiteRenewablesKwh": 96 },
+      "virginDisplacementFactor": { "value": 1.7, "unit": "kgCO2e/kg", "source": "UK polymer sector default (project impact model)" }
+    },
+    "ukRegulatory": {
+      "ewcCode": "19 12 04",
+      "endOfWasteStatus": { "achieved": true, "basis": "individual-assessment", "atEvent": "urn:uuid:e6-transform-extrude-2026-08-01" },
+      "wasteHierarchyPosition": "recycling",
+      "recoveryCode": "R3",
+      "pptStatus": { "inScope": true, "recycledFractionForPpt": 0.87, "evidenceRef": "urn:uuid:e8-blend-2026-08-02" },
+      "eprCategory": "plastic",
+      "permits": [{ "type": "environmental-permit", "ref": "EPR/AB1234CD" }],
+      "euMapping": { "esprCategory": "polymers-intermediate", "ppwrRecyclabilityGrade": "B" }
+    }
+  },
+  "proof": {
+    "type": "DataIntegrityProof",
+    "cryptosuite": "ecdsa-jcs-2019",
+    "created": "2026-08-03T14:22:04Z",
+    "verificationMethod": "https://passports.example-recycler.co.uk/.well-known/keys/2026-1#key-1",
+    "proofPurpose": "assertionMethod",
+    "proofValue": "z3FXQjecWufY46...ILLUSTRATIVE-NOT-A-REAL-SIGNATURE...9vKpW2a"
+  }
+}

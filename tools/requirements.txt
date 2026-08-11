@@ -1,0 +1,4 @@
+# UK Materials Passport validator dependencies (tools/validate.py)
+jsonschema>=4.21
+# Enables strict date-time / format assertions in jsonschema's FormatChecker
+rfc3339-validator>=0.1.4

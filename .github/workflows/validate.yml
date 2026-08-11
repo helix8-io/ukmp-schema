@@ -1,0 +1,40 @@
+name: Schema validation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validate-examples:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install validator dependencies
+        run: pip install -r tools/requirements.txt
+
+      - name: Validate all example passports
+        run: |
+          shopt -s nullglob
+          files=(examples/*.jsonld examples/*.json)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No example files found" >&2
+            exit 1
+          fi
+          python tools/validate.py "${files[@]}"
+
+      - name: Check JSON-LD context files parse
+        run: |
+          python -c "
+          import json, sys
+          for f in ['schema/context.jsonld', 'schema/plastics-context.jsonld', 'schema/material_passport.schema.json']:
+              json.load(open(f))
+              print(f'{f}: OK')
+          "
