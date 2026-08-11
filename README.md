@@ -12,6 +12,8 @@ Developed by [Helix8 Ltd](https://www.materiai.co.uk) as work package 1 of the
 Innovate UK feasibility study *Interoperable Materials Passport Infrastructure
 for UK Circular Economy (Materials 4.0 Focus)*, project 10188380.
 
+Canonical repository: `https://github.com/materiAI/ukmp-schema` · Project site: [materiai.co.uk](https://www.materiai.co.uk)
+
 ## What is a materials passport?
 
 A materials passport is a machine-readable record that travels with a batch of
