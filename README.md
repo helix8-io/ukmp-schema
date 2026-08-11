@@ -14,6 +14,8 @@ for UK Circular Economy (Materials 4.0 Focus)*, project 10188380.
 
 Canonical repository: `https://github.com/materiAI/ukmp-schema` · Project site: [materiai.co.uk](https://www.materiai.co.uk)
 
+**Try it in your browser:** the [interactive playground](https://materiAI.github.io/ukmp-schema/) builds a passport from editable process weights (recycled content computed from the event chain) and validates pasted passports against the same checks as `tools/validate.py` — including catching claims that don't match their evidence. Source: [`docs/index.html`](docs/index.html); enable GitHub Pages (Settings → Pages → main branch, `/docs` folder) to serve it.
+
 ## What is a materials passport?
 
 A materials passport is a machine-readable record that travels with a batch of

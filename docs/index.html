@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UK Materials Passport Schema — interactive playground</title>
+<meta name="description" content="Build and validate a UK materials passport in your browser. Recycled content is computed from the event chain, not typed in. Open source (Apache-2.0).">
+<style>
+  :root{--ink:#10201A;--bg:#0E1A15;--panel:#13231C;--card:#182B22;--green:#1E8A5C;--mint:#35C58F;--pale:#EDF6F1;--mut:#8FA79B;--line:#24382E;--amber:#D97706;--red:#DC2626;--white:#FFF}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--pale);line-height:1.5;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1060px;margin:0 auto;padding:0 20px}
+  header{padding:22px 0 6px}
+  header .wrap{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+  .wm{font-weight:800;font-size:1.3rem;color:var(--white)}
+  .wm span{color:var(--mint)}
+  .by{color:var(--mut);font-size:.7rem;letter-spacing:.13em;text-transform:uppercase}
+  h1{font-size:clamp(1.5rem,4vw,2.1rem);font-weight:800;color:var(--white);margin:14px 0 6px}
+  .sub{color:var(--mut);max-width:46rem;font-size:.95rem}
+  .tabs{display:flex;gap:8px;margin:20px 0 16px}
+  .tab{padding:9px 18px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--pale);font-weight:700;font-size:.9rem;cursor:pointer}
+  .tab.on{background:var(--green);border-color:var(--green);color:#fff}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:860px){.grid{grid-template-columns:1fr}}
+  .box{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+  .box h3{font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mint);margin-bottom:10px}
+  label{display:block;font-size:.78rem;color:var(--mut);margin:10px 0 3px}
+  input,select,textarea{width:100%;background:#0B1512;border:1px solid var(--line);border-radius:8px;color:var(--pale);padding:8px 10px;font-size:.9rem;font-family:inherit}
+  textarea{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.75rem;min-height:340px;white-space:pre;resize:vertical}
+  table{width:100%;border-collapse:collapse;margin-top:6px;font-size:.82rem}
+  th{text-align:left;color:var(--mut);font-weight:600;font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;padding:4px 6px;border-bottom:1px solid var(--line)}
+  td{padding:4px 6px;border-bottom:1px dashed var(--line)}
+  td input{padding:5px 7px;font-size:.82rem}
+  td.step{color:var(--pale);font-weight:600;white-space:nowrap}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0 4px}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px;text-align:center}
+  .stat .n{font-size:1.5rem;font-weight:800;color:var(--mint)}
+  .stat .n.bad{color:var(--red)}
+  .stat .l{font-size:.62rem;color:var(--mut);text-transform:uppercase;letter-spacing:.07em}
+  .report{margin-top:12px}
+  .check{display:flex;gap:9px;align-items:flex-start;padding:7px 0;border-bottom:1px dashed var(--line);font-size:.86rem}
+  .check:last-child{border-bottom:none}
+  .ic{flex:0 0 auto;width:19px;height:19px;border-radius:50%;display:grid;place-items:center;font-size:.65rem;font-weight:800}
+  .ic.p{background:rgba(53,197,143,.16);color:var(--mint)}
+  .ic.f{background:rgba(220,38,38,.16);color:#F87171}
+  .ic.w{background:rgba(217,119,6,.16);color:var(--amber)}
+  .verdict{margin-top:12px;padding:12px 14px;border-radius:10px;font-weight:700;font-size:.95rem}
+  .verdict.ok{background:rgba(53,197,143,.12);color:var(--mint);border:1px solid rgba(53,197,143,.35)}
+  .verdict.bad{background:rgba(220,38,38,.12);color:#F87171;border:1px solid rgba(220,38,38,.35)}
+  .btn{display:inline-block;background:var(--green);color:#fff;font-weight:700;padding:9px 16px;border-radius:9px;border:none;font-size:.88rem;cursor:pointer;margin:8px 6px 0 0}
+  .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--pale)}
+  .btn.mini{padding:6px 11px;font-size:.78rem;margin:0 6px 6px 0;background:var(--panel);border:1px solid var(--line);color:var(--pale)}
+  .btn.mini:hover,.btn.ghost:hover{border-color:var(--mint)}
+  pre{background:#0B1512;border:1px solid var(--line);border-radius:10px;padding:12px;font-size:.72rem;overflow:auto;max-height:420px;color:#C9E4D6}
+  footer{margin-top:34px;padding:20px 0 36px;border-top:1px solid var(--line);color:var(--mut);font-size:.78rem}
+  footer a{color:var(--mint);text-decoration:none}
+  .hide{display:none}
+  .note{font-size:.75rem;color:var(--mut);margin-top:8px}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div><div class="wm">materi<span>AI</span></div><div class="by">UK materials passport schema · open playground</div></div>
+  <div class="by"><a href="https://github.com/materiAI/ukmp-schema" style="color:var(--mint);text-decoration:none">github.com/materiAI/ukmp-schema</a></div>
+</div></header>
+
+<div class="wrap">
+  <h1>Try the toolkit in your browser</h1>
+  <p class="sub">Build a materials passport from process data and watch recycled content get <b style="color:var(--pale)">computed from the event chain</b> — or paste any passport and validate it. Everything runs locally in your browser; nothing is uploaded. The checks mirror <code>tools/validate.py</code> from the open-source toolkit.</p>
+
+  <div class="tabs">
+    <button class="tab on" id="tabB" onclick="mode('b')">Build a passport</button>
+    <button class="tab" id="tabV" onclick="mode('v')">Validate a passport</button>
+  </div>
+
+  <!-- BUILD -->
+  <div id="paneB" class="grid">
+    <div>
+      <div class="box">
+        <h3>1 · Batch</h3>
+        <label>Material</label>
+        <select id="mat"><option>HDPE</option><option>LDPE</option><option>PP</option><option>PET</option></select>
+        <label>Batch ID</label>
+        <input id="bid" value="B26-0803-HD">
+      </div>
+      <div class="box" style="margin-top:14px">
+        <h3>2 · Process events — edit the weights</h3>
+        <table>
+          <tr><th>Step</th><th>In (kg)</th><th>Out (kg)</th><th>Waste (kg)</th></tr>
+          <tr><td class="step">Intake (PC bales)</td><td><input type="number" id="i0" value="1240"></td><td>—</td><td>—</td></tr>
+          <tr><td class="step">Shred</td><td><input type="number" id="s_i" value="1240"></td><td><input type="number" id="s_o" value="1176"></td><td><input type="number" id="s_w" value="64"></td></tr>
+          <tr><td class="step">Wash</td><td><input type="number" id="w_i" value="1176"></td><td><input type="number" id="w_o" value="1128"></td><td><input type="number" id="w_w" value="48"></td></tr>
+          <tr><td class="step">Extrude</td><td><input type="number" id="e_i" value="1128"></td><td><input type="number" id="e_o" value="1102"></td><td><input type="number" id="e_w" value="26"></td></tr>
+          <tr><td class="step">Blend: PCR used</td><td><input type="number" id="b_p" value="890"></td><td rowspan="2" style="vertical-align:middle"><input type="number" id="b_o" value="1004"></td><td rowspan="2" style="vertical-align:middle"><input type="number" id="b_w" value="16"></td></tr>
+          <tr><td class="step">Blend: virgin carrier</td><td><input type="number" id="b_v" value="130"></td></tr>
+          <tr><td class="step">Pack (despatched)</td><td><input type="number" id="p_i" value="1004"></td><td><input type="number" id="p_o" value="1000"></td><td><input type="number" id="p_w" value="4"></td></tr>
+        </table>
+        <p class="note">Try it: bump "virgin carrier" to 500 and watch the recycled figure fall — or make the shred output bigger than its input and watch validation fail.</p>
+      </div>
+    </div>
+    <div>
+      <div class="box">
+        <h3>3 · Computed from the chain — not typed in</h3>
+        <div class="stats">
+          <div class="stat"><div class="n" id="pcr">—</div><div class="l">post-consumer recycled</div></div>
+          <div class="stat"><div class="n" id="yld">—</div><div class="l">process yield</div></div>
+          <div class="stat"><div class="n" id="mb">—</div><div class="l">mass balance</div></div>
+        </div>
+        <div class="report" id="repB"></div>
+        <div id="verB"></div>
+        <button class="btn" onclick="downloadJson()">Download passport JSON-LD</button>
+        <button class="btn ghost" onclick="showJson()">View JSON-LD</button>
+      </div>
+      <div class="box hide" id="jsonBox" style="margin-top:14px"><h3>Passport (Level 2 — evidence-linked, unsigned)</h3><pre id="jsonOut"></pre></div>
+    </div>
+  </div>
+
+  <!-- VALIDATE -->
+  <div id="paneV" class="grid hide">
+    <div class="box">
+      <h3>Paste a passport, or load a preset</h3>
+      <div>
+        <button class="btn mini" onclick="preset('good')">Level 3 example</button>
+        <button class="btn mini" onclick="preset('min')">Level 1 minimal</button>
+        <button class="btn mini" onclick="preset('bad')">Tampered claim</button>
+      </div>
+      <textarea id="pasted" spellcheck="false" placeholder='Paste JSON-LD passport here…'></textarea>
+      <button class="btn" onclick="runValidate()">Validate</button>
+    </div>
+    <div class="box">
+      <h3>Validation report</h3>
+      <div class="report" id="repV"><p class="note">Load a preset or paste a passport, then Validate.</p></div>
+      <div id="verV"></div>
+    </div>
+  </div>
+
+  <footer>
+    <p><b style="color:var(--pale)">This is a demonstration implementation</b> of the UK Materials Passport Schema v0.1-draft checks (structure, recycled-content arithmetic, mass-balance reconciliation, conformance level). The canonical validator is <a href="https://github.com/materiAI/ukmp-schema">tools/validate.py in the repository</a>. Cryptographic proof verification (Level 3) is indicated, not performed, in this browser demo.</p>
+    <p style="margin-top:6px">Apache-2.0 · Developed by <a href="https://www.materiai.co.uk">Helix8 Ltd (materiAI)</a> under Innovate UK project 10188380 (National Materials Innovation Programme) · Validation partners: Plaswire Ltd, Border Plastics Recycling Ltd.</p>
+  </footer>
+</div>
+
+<script>
+function mode(m){
+  document.getElementById('paneB').classList.toggle('hide', m!=='b');
+  document.getElementById('paneV').classList.toggle('hide', m!=='v');
+  document.getElementById('tabB').classList.toggle('on', m==='b');
+  document.getElementById('tabV').classList.toggle('on', m==='v');
+}
+const V = id => parseFloat(document.getElementById(id).value)||0;
+const TOL = 0.005; // 0.5% tolerance, matches validate.py
+
+function computeModel(){
+  const steps=[
+    {name:'Shred', i:V('s_i'), o:V('s_o'), w:V('s_w')},
+    {name:'Wash', i:V('w_i'), o:V('w_o'), w:V('w_w')},
+    {name:'Extrude', i:V('e_i'), o:V('e_o'), w:V('e_w')},
+    {name:'Blend', i:V('b_p')+V('b_v'), o:V('b_o'), w:V('b_w')},
+    {name:'Pack', i:V('p_i'), o:V('p_o'), w:V('p_w')},
+  ];
+  const pcrIn=V('b_p'), virgin=V('b_v');
+  const pcrFrac=(pcrIn+virgin)>0 ? pcrIn/(pcrIn+virgin) : 0;
+  const yieldPct=V('i0')>0 ? V('e_o')/V('i0') : 0;
+  const mbOK=steps.every(s=> s.i>0 && Math.abs(s.i-(s.o+s.w))/s.i<=TOL);
+  return {steps, pcrFrac, yieldPct, mbOK, pcrIn, virgin};
+}
+function buildPassport(){
+  const m=computeModel();
+  return {
+    "@context":["https://schema.materialspassport.org.uk/v0.1/context.jsonld"],
+    "type":"ukmp:MaterialPassport",
+    "passportId":"https://id.gs1.org/01/05060987654321/10/"+document.getElementById('bid').value,
+    "subjectType":"MaterialBatch","conformanceLevel":2,
+    "description":V('p_o')+" kg post-consumer recycled "+document.getElementById('mat').value+" pellet",
+    "recycledContent":{"postConsumerFraction":+m.pcrFrac.toFixed(4),"calculationMethod":"mass-balance","evidenceType":"epcis-event-chain","verificationStatus":"evidence-linked"},
+    "processingHistory":{"epcisEvents":m.steps.map((s,ix)=>({"type":ix===0?"TransformationEvent":"TransformationEvent","bizStep":"transforming","step":s.name.toLowerCase(),"ukmp:massBalanceDelta":{"inputKg":s.i,"outputKg":s.o,"wasteKg":s.w}}))},
+    "ukRegulatory":{"pptStatus":{"inScope":true,"recycledFractionForPpt":+m.pcrFrac.toFixed(4),"meetsThreshold":m.pcrFrac>=0.3}}
+  };
+}
+function check(name,ok,detail,warn){return {name,ok,detail,warn};}
+function renderChecks(el,checks){
+  el.innerHTML=checks.map(c=>'<div class="check"><span class="ic '+(c.warn?'w':(c.ok?'p':'f'))+'">'+(c.warn?'!':(c.ok?'✓':'✗'))+'</span><span><b>'+c.name+'</b> — '+c.detail+'</span></div>').join('');
+}
+function refreshBuild(){
+  const m=computeModel();
+  document.getElementById('pcr').textContent=(m.pcrFrac*100).toFixed(1)+'%';
+  document.getElementById('yld').textContent=(m.yieldPct*100).toFixed(1)+'%';
+  const mbEl=document.getElementById('mb');
+  mbEl.textContent=m.mbOK?'✓':'✗'; mbEl.className='n'+(m.mbOK?'':' bad');
+  const checks=m.steps.map(s=>{
+    const d=s.i-(s.o+s.w); const ok=s.i>0&&Math.abs(d)/Math.max(s.i,1)<=TOL;
+    return check(s.name+' reconciles', ok, ok?(s.i+' in = '+s.o+' out + '+s.w+' waste'):('off by '+d.toFixed(1)+' kg — inputs must equal outputs + waste'));
+  });
+  checks.push(check('Recycled content computed', true, (m.pcrFrac*100).toFixed(1)+'% = '+m.pcrIn+' kg PCR ÷ ('+m.pcrIn+' + '+m.virgin+' kg virgin) at blend'));
+  checks.push(check('PPT threshold (≥30%)', m.pcrFrac>=0.3, m.pcrFrac>=0.3?'above the Plastic Packaging Tax recycled-content threshold':'below 30% — PPT would apply', m.pcrFrac>=0.3?false:true));
+  renderChecks(document.getElementById('repB'),checks);
+  const all=m.mbOK;
+  document.getElementById('verB').innerHTML='<div class="verdict '+(all?'ok':'bad')+'">'+(all?'PASS — Level 2 (evidence-linked): every claim traces to reconciled events':'FAIL — mass balance does not reconcile; this passport would be rejected')+'</div>';
+  if(!document.getElementById('jsonBox').classList.contains('hide')) document.getElementById('jsonOut').textContent=JSON.stringify(buildPassport(),null,2);
+}
+function showJson(){document.getElementById('jsonBox').classList.remove('hide');document.getElementById('jsonOut').textContent=JSON.stringify(buildPassport(),null,2);}
+function downloadJson(){
+  const blob=new Blob([JSON.stringify(buildPassport(),null,2)],{type:'application/ld+json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='ukmp_passport_'+document.getElementById('bid').value+'.jsonld';a.click();
+}
+document.querySelectorAll('#paneB input,#paneB select').forEach(e=>e.addEventListener('input',refreshBuild));
+
+// ---------- validate tab ----------
+const PRESETS={
+ good:{"@context":["https://www.w3.org/ns/credentials/v2","https://schema.materialspassport.org.uk/v0.1/context.jsonld"],"type":["VerifiableCredential","MaterialPassportCredential"],"issuer":"https://passports.materiai.co.uk/tenants/example-recycler","credentialSubject":{"type":"ukmp:MaterialPassport","passportId":"https://id.gs1.org/01/05060987654321/10/B26-0803-HD","conformanceLevel":3,"description":"1,000 kg post-consumer recycled HDPE pellet","recycledContent":{"postConsumerFraction":0.87,"calculationMethod":"mass-balance","evidenceType":"epcis-event-chain","verificationStatus":"evidence-linked"},"processingHistory":{"epcisEvents":[{"bizStep":"transforming","step":"shred","ukmp:massBalanceDelta":{"inputKg":1240,"outputKg":1176,"wasteKg":64}},{"bizStep":"transforming","step":"wash","ukmp:massBalanceDelta":{"inputKg":1176,"outputKg":1128,"wasteKg":48}},{"bizStep":"transforming","step":"extrude","ukmp:massBalanceDelta":{"inputKg":1128,"outputKg":1102,"wasteKg":26}},{"bizStep":"transforming","step":"blend","ukmp:pcrInputKg":890,"ukmp:virginInputKg":130,"ukmp:massBalanceDelta":{"inputKg":1020,"outputKg":1004,"wasteKg":16}},{"bizStep":"packing","step":"pack","ukmp:massBalanceDelta":{"inputKg":1004,"outputKg":1000,"wasteKg":4}}]}},"proof":{"type":"DataIntegrityProof","cryptosuite":"ecdsa-jcs-2019","proofValue":"z3FXQjecWufY…demo"}},
+ min:{"@context":["https://schema.materialspassport.org.uk/v0.1/context.jsonld"],"type":"ukmp:MaterialPassport","passportId":"https://id.gs1.org/01/05060111222333/10/L1-0001","conformanceLevel":1,"description":"500 kg recycled LDPE film pellet","recycledContent":{"postConsumerFraction":0.60,"calculationMethod":"declared","verificationStatus":"self-declared"}},
+ bad:{"@context":["https://schema.materialspassport.org.uk/v0.1/context.jsonld"],"type":"ukmp:MaterialPassport","passportId":"https://id.gs1.org/01/05060111222333/10/X-666","conformanceLevel":2,"description":"1,000 kg 'recycled' pellet — tampered example","recycledContent":{"postConsumerFraction":0.95,"calculationMethod":"mass-balance","evidenceType":"epcis-event-chain","verificationStatus":"evidence-linked"},"processingHistory":{"epcisEvents":[{"bizStep":"transforming","step":"blend","ukmp:pcrInputKg":600,"ukmp:virginInputKg":400,"ukmp:massBalanceDelta":{"inputKg":1000,"outputKg":1050,"wasteKg":10}}]}}
+};
+function preset(k){document.getElementById('pasted').value=JSON.stringify(PRESETS[k],null,2);runValidate();}
+function runValidate(){
+  const rep=document.getElementById('repV'), ver=document.getElementById('verV');
+  let doc;
+  try{doc=JSON.parse(document.getElementById('pasted').value);}catch(e){rep.innerHTML='';renderChecks(rep,[check('JSON parses',false,'not valid JSON: '+e.message)]);ver.innerHTML='<div class="verdict bad">FAIL — not parseable</div>';return;}
+  const isVC=Array.isArray(doc.type)&&doc.type.includes('VerifiableCredential');
+  const p=isVC?(doc.credentialSubject||{}):doc;
+  const checks=[];
+  checks.push(check('JSON parses',true,'well-formed document'));
+  const ctx=JSON.stringify(doc['@context']||'');
+  checks.push(check('UKMP context',ctx.includes('materialspassport.org.uk'),ctx.includes('materialspassport.org.uk')?'schema context declared':'missing UKMP @context'));
+  const req=['passportId','description','recycledContent'];
+  const missing=req.filter(k=>!p[k]);
+  checks.push(check('Required fields',missing.length===0,missing.length===0?'passportId, description, recycledContent present':'missing: '+missing.join(', ')));
+  const rc=p.recycledContent||{};
+  const fracOK=typeof rc.postConsumerFraction==='number'&&rc.postConsumerFraction>=0&&rc.postConsumerFraction<=1;
+  checks.push(check('Recycled-content fraction',fracOK,fracOK?(rc.postConsumerFraction*100).toFixed(1)+'% · method: '+(rc.calculationMethod||'unstated'):'postConsumerFraction must be a number in [0,1]'));
+  let evOK=true, evDetail='no event chain (acceptable at Level 1 with method "declared")', evPresent=false, claimOK=true;
+  const evs=((p.processingHistory||{}).epcisEvents)||[];
+  if(evs.length){evPresent=true;
+    let bad=[];
+    evs.forEach(e=>{const d=e['ukmp:massBalanceDelta'];if(d){const diff=d.inputKg-(d.outputKg+d.wasteKg);if(Math.abs(diff)/Math.max(d.inputKg,1)>TOL)bad.push((e.step||e.bizStep)+' off by '+diff.toFixed(1)+' kg');}});
+    evOK=bad.length===0; evDetail=evOK?evs.length+' events, all reconcile (in = out + waste)':bad.join('; ');
+    const blend=evs.find(e=>typeof e['ukmp:pcrInputKg']==='number');
+    if(blend&&fracOK){const computed=blend['ukmp:pcrInputKg']/(blend['ukmp:pcrInputKg']+blend['ukmp:virginInputKg']);
+      claimOK=Math.abs(computed-rc.postConsumerFraction)<=0.02;
+      checks.push(check('Claim matches evidence',claimOK,claimOK?('declared '+(rc.postConsumerFraction*100).toFixed(0)+'% ≈ computed '+(computed*100).toFixed(1)+'% from blend inputs'):('declared '+(rc.postConsumerFraction*100).toFixed(0)+'% but the event chain computes '+(computed*100).toFixed(1)+'% — the claim is not supported by the evidence')));}
+  } else if((rc.calculationMethod||'')!=='declared'&&rc.evidenceType){evOK=false;evDetail='evidenceType set but no events supplied';}
+  checks.push(check('Mass balance',evOK,evDetail,!evPresent));
+  if(isVC){checks.push(check('Trust envelope',!!doc.proof,'W3C VC with proof ('+(doc.proof&&doc.proof.cryptosuite||'?')+') — signature verification runs in the full toolkit, not this demo',true));}
+  const structOK=missing.length===0&&fracOK;
+  const level=!structOK?0:(isVC&&doc.proof&&evOK&&claimOK)?3:(evPresent&&evOK&&claimOK)?2:1;
+  const pass=structOK&&evOK&&claimOK;
+  renderChecks(rep,checks);
+  ver.innerHTML='<div class="verdict '+(pass?'ok':'bad')+'">'+(pass?('PASS — conformance level '+level+' ('+['','Core / self-declared','Evidence-linked','Verified (signature indicated)'][level]+')'):'FAIL — this passport would be rejected by the validator')+'</div>';
+}
+refreshBuild();
+</script>
+</body>
+</html>
