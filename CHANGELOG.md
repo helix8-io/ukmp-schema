@@ -36,6 +36,16 @@ schema namespace.
   the payload is decoded and validated; the signature is indicated,
   not verified (unchanged honesty note).
 
+- Alignment cheap acts (M4 note §3.1–3.3): `alternativeId.scheme`
+  documents the EN 18219:2026 permitted schemes (`gs1-digital-link`,
+  `iec-61406`, `did`, `doi`) as recommended, non-exclusive values;
+  `ukmp:Party` gains optional `otherPartyId {scheme, value}` (LEI,
+  Companies House, DUNS) alongside `gs1:gln`; stale "CIRPASS-2 DPP
+  data model" references re-worded to CEN EN 18223:2026 + CIRPASS-2
+  D4.1, and the §6 rationale now cites the live EU DPP registry
+  (Implementing Regulation (EU) 2026/1778). Open issue 2 marked
+  completed with the next re-diff trigger.
+
 ### Added
 
 - `IMPLEMENTATION_STATUS.md` — per-conformance-level reference
