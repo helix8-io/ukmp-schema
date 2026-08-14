@@ -15,7 +15,7 @@ This document specifies the **UK Materials Passport Schema**: an open, JSON-LD d
 
 The schema is the WP1 deliverable of project 10188380. It:
 
-- **Extends the EU CIRPASS-2 framework** with practical data fields for UK recycling and manufacturing contexts (recycled-content verification, LCA integration, UK regulatory identifiers);
+- **Extends the European DPP framework** — CEN EN 18223:2026 (DPP system interoperability) and the CIRPASS-2 D4.1 reference architecture (June 2026), informed by UNTP — with practical data fields for UK recycling and manufacturing contexts (recycled-content verification, LCA integration, UK regulatory identifiers);
 - **Serialises as JSON-LD aligned with GS1 EPCIS 2.0**, so that passport events are expressed in the same vocabulary enterprise systems already use for supply-chain visibility;
 - **Is designed for exchange**, not for any single platform. Any conformant system — ERP, MES, traceability platform, regulatory reporting tool — can produce, consume, and verify a passport without reference to the system that created it.
 
@@ -23,7 +23,7 @@ Plastics/polymers are the validation sector (WP4, with Plaswire and Border Plast
 
 ## 2. Design principles
 
-1. **Extend, don't replace.** Where an established standard defines a concept, we reference it (GS1 EPCIS 2.0 CBV, CIRPASS-2 DPP data model, W3C VC v2.0, UN/CEFACT). New terms are introduced only for genuinely UK-specific or gap fields.
+1. **Extend, don't replace.** Where an established standard defines a concept, we reference it (GS1 EPCIS 2.0 CBV, CEN EN 18223:2026, CIRPASS-2 D4.1, W3C VC v2.0, UN/CEFACT UNTP). New terms are introduced only for genuinely UK-specific or gap fields.
 2. **Layered, so adopters can start small.** A passport is useful at the data layer alone; verification and exchange layers are additive. An SME can emit Level 1 (Core) passports from a spreadsheet export; a platform can emit Level 3 (Linked & Verified) passports. Both interoperate.
 3. **Events are the source of truth.** A passport is a *view* derived from a chain of EPCIS events, not a hand-assembled document. This is what makes claims auditable rather than asserted.
 4. **Verification is standards-based.** The trust envelope is a W3C Verifiable Credential (Data Model v2.0). No proprietary verification protocol; any off-the-shelf VC verifier works.
@@ -35,7 +35,7 @@ Plastics/polymers are the validation sector (WP4, with Plaswire and Border Plast
 |---|---|---|---|
 | L0 | **Identity** | GS1 keys (GTIN, GLN, SSCC/LGTIN), GS1 Digital Link | Who/what/where identifiers; QR resolution to the passport |
 | L1 | **Events** | GS1 EPCIS 2.0 (JSON-LD binding) | Commissioning, transformation, aggregation, shipping events — the material journey |
-| L2 | **Passport content** | CIRPASS-2 DPP data model + UK extension (this spec) | Composition, recycled content, processing summary, LCA/carbon, regulatory codes |
+| L2 | **Passport content** | CEN EN 18223:2026 + CIRPASS-2 D4.1 alignment, + UK extension (this spec) | Composition, recycled content, processing summary, LCA/carbon, regulatory codes |
 | L3 | **Trust envelope** | W3C Verifiable Credentials v2.0, Data Integrity proof | Issuer identity, signature, revocation status, audit-trail linkage |
 | L4 | **Sector profiles** | This spec's extension mechanism | Plastics profile (normative here); batteries/textiles/construction (WP3 assessment) |
 
@@ -52,8 +52,8 @@ The root object (carried as `credentialSubject` at Level 3).
 |---|---|---|---|
 | `passportId` | URI | ✔ | Globally unique; resolvable via GS1 Digital Link |
 | `subjectType` | enum | ✔ | `MaterialBatch` \| `Product` \| `Component` |
-| `gs1:gtin` / `gs1:lgtin` | string | ✔* | GS1 identifier of the batch/product (*or `alternativeId` with scheme) |
-| `issuerParty` | `ukmp:Party` | ✔ | Organisation issuing the passport (GLN + name) |
+| `gs1:gtin` / `gs1:lgtin` | string | ✔* | GS1 identifier of the batch/product (*or `alternativeId` with scheme — the EN 18219:2026 permitted schemes `gs1-digital-link`, `iec-61406`, `did` and `doi` are recommended for EU DPP registry registrability; other schemes remain valid) |
+| `issuerParty` | `ukmp:Party` | ✔ | Organisation issuing the passport (GLN + name; optionally `otherPartyId {scheme, value}` — e.g. GLEIF LEI, Companies House number, DUNS — per EN 18219 operator-identifier schemes) |
 | `issueDate` / `lastUpdated` | ISO 8601 | ✔ | |
 | `composition` | `ukmp:Composition` | ✔ | §4.2 |
 | `recycledContent` | `ukmp:RecycledContentClaim` | ✔ | §4.3 — the UK-extension centrepiece |
@@ -134,7 +134,7 @@ At conformance Level 3 the passport is issued as a **W3C Verifiable Credential, 
 - `credentialStatus`: W3C Bitstring Status List entry — enables batch recall/withdrawal without breaking previously distributed copies
 - External time-anchoring (attestation of existence) is **pluggable and out of schema scope** — the schema carries `evidenceRefs` to anchoring receipts; the anchoring provider model is specified in the WP2 API documentation.
 
-Rationale: the EU DPP implementation direction (JRC methodology work, CIRPASS-2 pilots, W3C VC-for-GS1 draft) treats VCs as the natural expression of verifiable product data. Adopting the VC envelope now means UK passports will register cleanly with the planned EU DPP registry rather than needing wrapping later.
+Rationale: the EU DPP implementation direction (JRC methodology work, CIRPASS-2 pilots, W3C VC-for-GS1 draft) treats VCs as the natural expression of verifiable product data. Adopting the VC envelope now means UK passports will register cleanly with the EU DPP registry — live since 20 July 2026 under Implementing Regulation (EU) 2026/1778 — rather than needing wrapping later.
 
 **Implementation status:** this clause is normative. Level 3 issuance is not yet available in the reference implementation — see `IMPLEMENTATION_STATUS.md` for current per-level coverage.
 
@@ -167,7 +167,7 @@ A machine-validation schema is provided in `material_passport.schema.json` (JSON
 ## 10. Open issues for steering discussion (M4)
 
 1. **Namespace home** — `schema.materialspassport.org.uk` proposed; needs registration decision and a neutral governance statement so the namespace outlives Helix8 stewardship (open-ecosystem commitment).
-2. **CIRPASS-2 tracking** — alignment checkpoint due this month (M4, per risk register): re-diff against latest CIRPASS-2 data-model draft before schema freeze at M5.
+2. **CIRPASS-2 tracking** — M4 checkpoint completed (August 2026 alignment note): normative authority has moved to CEN/CENELEC JTC 24 (EN 18216–18223, OJ-harmonised July 2026). Next re-diff on publication of EN 18239/18246 (~September 2026), before v0.2.
 3. **PPT evidence granularity** — HMRC guidance accepts mass-balance for PPT in constrained cases; validation partners to confirm the evidence granularity their auditors actually request (WP1 workshop follow-up).
 4. **Digital Link resolver** — single national resolver vs. per-issuer resolvers; affects the API spec (WP2) more than the schema, decision needed by M5.
 5. **Level 3 key custody for SMEs** — smaller adopters won't run KMS; does the ecosystem need a hosted signing service, and is that a commercial (post-project) offering? Feeds exploitation plan.

@@ -14,7 +14,14 @@
     "alternativeId": {
       "type": "object",
       "required": ["scheme", "value"],
-      "properties": { "scheme": { "type": "string" }, "value": { "type": "string" } }
+      "properties": {
+        "scheme": {
+          "type": "string",
+          "description": "Identifier scheme. EN 18219:2026 permitted product-identifier schemes are recommended for EU DPP registry registrability; other schemes remain valid.",
+          "examples": ["gs1-digital-link", "iec-61406", "did", "doi"]
+        },
+        "value": { "type": "string" }
+      }
     },
     "sectorProfile": { "type": "string", "format": "uri" },
     "conformanceLevel": { "enum": [1, 2, 3] },
@@ -40,6 +47,18 @@
       "properties": {
         "name": { "type": "string" },
         "gs1:gln": { "type": "string", "pattern": "^[0-9]{13}$" },
+        "otherPartyId": {
+          "type": "object",
+          "required": ["scheme", "value"],
+          "description": "Operator identifier beyond GLN — EN 18219:2026 recognises schemes including the GLEIF LEI; registry access under Implementing Regulation (EU) 2026/1778 ties to verified operator identity.",
+          "properties": {
+            "scheme": {
+              "type": "string",
+              "examples": ["lei", "companies-house", "duns"]
+            },
+            "value": { "type": "string" }
+          }
+        },
         "role": { "enum": ["producer", "collector", "sorter", "reprocessor", "compounder", "converter", "manufacturer", "brand", "verifier", "other"] }
       }
     },
