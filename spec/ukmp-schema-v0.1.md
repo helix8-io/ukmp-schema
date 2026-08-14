@@ -88,7 +88,8 @@ Designed to carry results from any LCA tool rather than embed a methodology:
 - `methodology` (e.g. ISO 14067, PEF, GHG Protocol product standard) + `characterisationFactors` version
 - `dataQualityRating` (1–5, PEF DQR-style), `primaryDataFraction` (0–1)
 - `energySource` breakdown (grid kWh, on-site renewables kWh) — populated automatically where site metering exists
-- `virginDisplacementFactor` — kg CO₂e avoided per kg vs. virgin equivalent, with source (default UK value 1.7 kg CO₂e/kg for polymers, per project impact model; overridable with tenant-specific LCA)
+- `virginBaselineKgCo2ePerKg` — the **gross** virgin cradle-to-gate burden for the equivalent polymer (value + mandatory `source`, optional `assessmentBoundary`). Polymer-specific and sourced; this specification deliberately sets **no normative default** — a baseline without LCA provenance is an asserted-not-checkable claim.
+- `netAvoidedKgCo2ePerKg` — the **net** avoided figure, computed as `virginBaselineKgCo2ePerKg.value` minus this passport's own `carbonFootprintKgCo2ePerKg`. Never defaulted and never carried without the baseline it derives from. (These two fields replace the earlier `virginDisplacementFactor`, whose name implied a dimensionless substitution ratio while its definition carried kg CO₂e — two different quantities wearing one field name. A genuinely dimensionless `substitutionFactor` (0–1) is reserved for a future revision should market-substitution modelling need it.)
 
 ### 4.5 `ukmp:UkRegulatoryData` — UK context fields
 - `ewcCode` — European Waste Catalogue / List of Waste code while material is waste
@@ -134,7 +135,7 @@ At conformance Level 3 the passport is issued as a **W3C Verifiable Credential, 
 
 Rationale: the EU DPP implementation direction (JRC methodology work, CIRPASS-2 pilots, W3C VC-for-GS1 draft) treats VCs as the natural expression of verifiable product data. Adopting the VC envelope now means UK passports will register cleanly with the planned EU DPP registry rather than needing wrapping later.
 
-**Honest status note for steering:** the reference implementation currently issues Level 1–2 passports (`verificationStatus: self-declared` / `evidence-linked`). Level 3 signing (KMS-held per-organisation ECDSA keys) is specified, scheduled in the WP2 reference-implementation backlog, and is a documented gap, not a claimed capability.
+**Implementation status:** this clause is normative. Level 3 issuance is not yet available in the reference implementation — see `IMPLEMENTATION_STATUS.md` for current per-level coverage.
 
 ## 7. Sector extension mechanism (L4 / WP3 input)
 
