@@ -145,15 +145,17 @@
             "onSiteRenewablesKwh": { "type": "number", "minimum": 0 }
           }
         },
-        "virginDisplacementFactor": {
+        "virginBaselineKgCo2ePerKg": {
           "type": "object",
-          "required": ["value", "unit"],
+          "required": ["value", "source"],
           "properties": {
-            "value": { "type": "number" },
+            "value": { "type": "number", "minimum": 0 },
             "unit": { "type": "string" },
-            "source": { "type": "string" }
+            "source": { "type": "string" },
+            "assessmentBoundary": { "enum": ["cradle-to-gate", "gate-to-gate", "cradle-to-grave"] }
           }
-        }
+        },
+        "netAvoidedKgCo2ePerKg": { "type": "number" }
       }
     },
     "ukRegulatoryData": {

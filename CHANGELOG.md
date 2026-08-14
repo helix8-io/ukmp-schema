@@ -5,6 +5,31 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versioning follows [Semantic Versioning](https://semver.org/) applied to the
 schema namespace.
 
+## [Unreleased]
+
+### Changed
+
+- **`ukmp:LcaSummary`: `virginDisplacementFactor` replaced by two explicit
+  fields.** The retired name implied a dimensionless substitution ratio
+  while its definition carried kg CO₂e — a units-and-semantics collision
+  between a gross virgin baseline and a net avoided figure.
+  `virginBaselineKgCo2ePerKg` (gross virgin cradle-to-gate burden;
+  polymer-specific, mandatory `source`, optional `assessmentBoundary`)
+  and `netAvoidedKgCo2ePerKg` (computed as baseline minus the passport's
+  own `carbonFootprintKgCo2ePerKg`; never defaulted) replace it. No
+  normative default value is set; the 1.7 kg CO₂e/kg figure in the
+  example passport is illustrative, with its WRAP-derived provenance
+  stated. A dimensionless `substitutionFactor` (0–1) is reserved for a
+  future revision.
+- Spec §6 status note reworded as a standing convention; per-level
+  reference-implementation coverage moved to `IMPLEMENTATION_STATUS.md`
+  at the repository root.
+
+### Added
+
+- `IMPLEMENTATION_STATUS.md` — per-conformance-level reference
+  implementation coverage table.
+
 ## [0.1.0] — 2026-08-11
 
 Initial public draft, released for project steering review (M4).

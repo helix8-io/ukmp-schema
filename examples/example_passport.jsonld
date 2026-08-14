@@ -83,7 +83,8 @@
       "dataQualityRating": 3,
       "primaryDataFraction": 0.78,
       "energySource": { "gridKwh": 412, "onSiteRenewablesKwh": 96 },
-      "virginDisplacementFactor": { "value": 1.7, "unit": "kgCO2e/kg", "source": "UK polymer sector default (project impact model)" }
+      "virginBaselineKgCo2ePerKg": { "value": 2.12, "unit": "kgCO2e/kg", "assessmentBoundary": "cradle-to-gate", "source": "Illustrative, non-normative: WRAP-derived UK mixed-polymer net-avoided figure (1.7 kg CO2e/kg, per project impact model) plus this batch's own 0.42 footprint" },
+      "netAvoidedKgCo2ePerKg": 1.7
     },
     "ukRegulatory": {
       "ewcCode": "19 12 04",
