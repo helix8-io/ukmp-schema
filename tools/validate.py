@@ -79,6 +79,30 @@ def extract_passport(doc: dict) -> tuple[dict, bool]:
     return doc, False
 
 
+def decode_jws(text: str):
+    """Decode a JOSE-enveloped credential (compact JWS, spec §6 primary
+    securing) WITHOUT verifying the signature. Returns (header, payload)
+    dicts or None if the text is not a well-formed compact JWS."""
+    import base64
+
+    parts = text.strip().split(".")
+    if len(parts) != 3 or not all(parts[:2]):
+        return None
+
+    def b64url_json(segment: str):
+        padded = segment + "=" * (-len(segment) % 4)
+        return json.loads(base64.urlsafe_b64decode(padded.encode("ascii")))
+
+    try:
+        header = b64url_json(parts[0])
+        payload = b64url_json(parts[1])
+    except (ValueError, json.JSONDecodeError):
+        return None
+    if not isinstance(header, dict) or not isinstance(payload, dict):
+        return None
+    return header, payload
+
+
 def check_schema(passport: dict, validator: Draft202012Validator) -> list[str]:
     errors = []
     for err in sorted(validator.iter_errors(passport), key=lambda e: list(e.absolute_path)):
@@ -150,8 +174,11 @@ def check_evidence_chain(passport: dict) -> list[str]:
     return warnings
 
 
-def detect_conformance_level(passport: dict, enveloped: bool, doc: dict) -> int:
-    """Detect the conformance level per spec §8 (machine-detectable)."""
+def detect_conformance_level(passport: dict, enveloped: bool, doc: dict,
+                             jose_secured: bool = False) -> int:
+    """Detect the conformance level per spec §8 (machine-detectable).
+    A credential is secured either by a JOSE envelope (primary) or an
+    embedded Data Integrity proof (permitted alternative)."""
     level = 1
     history = passport.get("processingHistory")
     has_events = isinstance(history, dict) and bool(history.get("epcisEvents"))
@@ -159,15 +186,29 @@ def detect_conformance_level(passport: dict, enveloped: bool, doc: dict) -> int:
     status = claim.get("verificationStatus") if isinstance(claim, dict) else None
     if has_events and status in ("evidence-linked", "independently-verified"):
         level = 2
-    if enveloped and isinstance(doc.get("proof"), dict) and level >= 2:
+    secured = jose_secured or (enveloped and isinstance(doc.get("proof"), dict))
+    if enveloped and secured and level >= 2:
         level = 3
     return level
 
 
 def validate_file(path: Path, validator: Draft202012Validator) -> bool:
+    jose_secured = False
     try:
         doc = load_json(path)
-    except (OSError, json.JSONDecodeError) as exc:
+    except json.JSONDecodeError:
+        # Not JSON — a JOSE-enveloped credential (compact JWS)?
+        try:
+            decoded = decode_jws(path.read_text(encoding="utf-8"))
+        except OSError as exc:
+            print(f"[ERROR] {path}: cannot read: {exc}")
+            sys.exit(2)
+        if decoded is None:
+            print(f"[ERROR] {path}: neither JSON nor a compact JWS")
+            sys.exit(2)
+        _, doc = decoded
+        jose_secured = True
+    except OSError as exc:
         print(f"[ERROR] {path}: cannot read/parse: {exc}")
         sys.exit(2)
 
@@ -183,13 +224,19 @@ def validate_file(path: Path, validator: Draft202012Validator) -> bool:
     errors += check_mass_balance(passport)
     warnings = check_evidence_chain(passport)
 
-    envelope_note = "VC-enveloped" if enveloped else "bare passport"
+    if jose_secured:
+        envelope_note = "JOSE-enveloped (JWS)"
+    elif enveloped:
+        envelope_note = "VC-enveloped"
+    else:
+        envelope_note = "bare passport"
     if errors:
         print(f"[FAIL]  {path} ({envelope_note})")
         for err in errors:
             print(f"        - {err}")
     else:
-        level = detect_conformance_level(passport, enveloped, doc)
+        level = detect_conformance_level(passport, enveloped, doc,
+                                         jose_secured=jose_secured)
         declared = passport.get("conformanceLevel")
         level_names = {1: "Core", 2: "Evidence-linked", 3: "Verified"}
         print(f"[PASS]  {path} ({envelope_note})")
@@ -197,6 +244,12 @@ def validate_file(path: Path, validator: Draft202012Validator) -> bool:
         if declared is not None and declared != level:
             warnings.append(
                 f"conformance: declared conformanceLevel {declared} != detected {level}"
+            )
+        if jose_secured:
+            warnings.append(
+                "jose: JWS signature present but NOT cryptographically verified by this "
+                "tool (Level 3 signature verification is a WP2 reference-implementation "
+                "capability)"
             )
         if enveloped and isinstance(doc.get("proof"), dict):
             warnings.append(

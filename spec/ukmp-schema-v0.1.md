@@ -129,7 +129,8 @@ At conformance Level 3 the passport is issued as a **W3C Verifiable Credential, 
 - `type`: `["VerifiableCredential", "MaterialPassportCredential"]`
 - `issuer`: HTTPS URL identifying the issuing organisation (optionally `did:web`); public keys published at `/.well-known/` per the API spec (WP2)
 - `credentialSubject`: the `ukmp:MaterialPassport` object (§4)
-- `proof`: Data Integrity proof, cryptosuite `ecdsa-jcs-2019` (ECDSA P-256 over JCS/RFC 8785 canonicalised content)
+- **Securing (primary): VC-JOSE enveloping proof** — the credential is secured as a compact JWS (`alg: ES256`, ECDSA P-256, header `typ: vc+jwt`) per W3C *Securing Verifiable Credentials using JOSE and COSE*. This follows the convergence of the CIRPASS-2 reference architecture (D4.1 rec 3.10) and UNTP on JOSE enveloping proofs (see `docs` alignment note, M4).
+- **Securing (permitted alternative): embedded Data Integrity proof**, cryptosuite `ecdsa-jcs-2019` (ECDSA P-256 over JCS/RFC 8785 canonicalised content). The same P-256 key material serves both mechanisms. Verifiers claiming Level 3 support MUST accept both securings; issuers SHOULD prefer JOSE for EU DPP registry interoperability.
 - `credentialStatus`: W3C Bitstring Status List entry — enables batch recall/withdrawal without breaking previously distributed copies
 - External time-anchoring (attestation of existence) is **pluggable and out of schema scope** — the schema carries `evidenceRefs` to anchoring receipts; the anchoring provider model is specified in the WP2 API documentation.
 
