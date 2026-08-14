@@ -25,6 +25,17 @@ schema namespace.
   reference-implementation coverage moved to `IMPLEMENTATION_STATUS.md`
   at the repository root.
 
+- **§6 securing mechanisms: VC-JOSE enveloping proof (ES256/P-256) is now
+  the primary securing**, with the embedded Data Integrity
+  `ecdsa-jcs-2019` proof retained as a permitted alternative. Follows
+  the CIRPASS-2 D4.1 / UNTP convergence on JOSE (M4 alignment
+  checkpoint); the same P-256 key material serves both, so the change
+  is cost-free before Level 3 issuance ships. Verifiers claiming
+  Level 3 MUST accept both.
+- `tools/validate.py` accepts JOSE-enveloped credentials (compact JWS):
+  the payload is decoded and validated; the signature is indicated,
+  not verified (unchanged honesty note).
+
 ### Added
 
 - `IMPLEMENTATION_STATUS.md` — per-conformance-level reference

@@ -10,7 +10,7 @@ than being restated inside spec clauses.
 |---|---|---|---|
 | 1 | Core | Normative (§8) | ✅ Emitted and validated (`tools/validate.py`, browser playground) |
 | 2 | Evidence-linked | Normative (§8) | ✅ Emitted and validated, including recycled-content arithmetic and mass-balance reconciliation |
-| 3 | Verified | Normative (§6, §8) | ⏳ Validation of the VC envelope and conformance-level detection is implemented; **signing/issuance is not** — KMS-held per-organisation ECDSA keys are scheduled in the WP2 backlog. `tools/validate.py` indicates, but does not perform, cryptographic proof verification. |
+| 3 | Verified | Normative (§6, §8) | ⏳ Validation of both securings (JOSE-enveloped compact JWS and embedded Data Integrity proof) and conformance-level detection is implemented; **signing/issuance is not** — KMS-held per-organisation ECDSA keys are scheduled in the WP2 backlog. `tools/validate.py` indicates, but does not perform, cryptographic signature verification. |
 
 Independent implementations of the schema (including commercial
 platforms) may support levels beyond the reference tooling; conformance
