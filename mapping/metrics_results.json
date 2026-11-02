@@ -1,0 +1,436 @@
+{
+  "batteries": {
+    "file": "batteries_batterypass_v1.2.csv",
+    "status": "full test",
+    "rows_in_csv": 93,
+    "excluded_optional": 11,
+    "total": 82,
+    "a": 2,
+    "b": 2,
+    "c": 63,
+    "d": 15,
+    "a_plus_b_pct": 4.9,
+    "coverage_pct": 81.7,
+    "bespoke_pct": 95.1,
+    "d_only_pct": 18.3,
+    "promotion_candidates": 9,
+    "d_items": [
+      {
+        "aspect": "GeneralProductInformation",
+        "attribute": "Manufacturer identifier and information",
+        "codes": [
+          "D1"
+        ],
+        "target": "issuerParty (role=manufacturer) / parties[] + Party.address + Party.contactPoint"
+      },
+      {
+        "aspect": "CarbonFootprintForBatteries",
+        "attribute": "Battery carbon footprint per Functional Unit",
+        "codes": [
+          "D2"
+        ],
+        "target": "environmentalFootprint (lcaSummary) + declaredUnit / functionalUnit"
+      },
+      {
+        "aspect": "CarbonFootprintForBatteries",
+        "attribute": "Contribution of raw material acquisition and pre-processing lifecycle stage",
+        "codes": [
+          "D3"
+        ],
+        "target": "lcaSummary.indicators[] {indicator, stage, value, unit}"
+      },
+      {
+        "aspect": "CarbonFootprintForBatteries",
+        "attribute": "Contribution of main product production/manufacturing lifecycle stage",
+        "codes": [
+          "D3"
+        ],
+        "target": "lcaSummary.indicators[]"
+      },
+      {
+        "aspect": "CarbonFootprintForBatteries",
+        "attribute": "Contribution of distribution lifecycle stage",
+        "codes": [
+          "D3"
+        ],
+        "target": "lcaSummary.indicators[]"
+      },
+      {
+        "aspect": "CarbonFootprintForBatteries",
+        "attribute": "Contribution of end of life and recycling lifecycle stage",
+        "codes": [
+          "D3"
+        ],
+        "target": "lcaSummary.indicators[]"
+      },
+      {
+        "aspect": "CarbonFootprintForBatteries",
+        "attribute": "Web link to public carbon footprint study",
+        "codes": [
+          "D4"
+        ],
+        "target": "lcaSummary.studyRefs[] (URI)"
+      },
+      {
+        "aspect": "Circularity",
+        "attribute": "Pre-consumer recycled nickel share",
+        "codes": [
+          "D5"
+        ],
+        "target": "recycledContent[scope=Ni].preConsumerFraction"
+      },
+      {
+        "aspect": "Circularity",
+        "attribute": "Pre-consumer recycled cobalt share",
+        "codes": [
+          "D5"
+        ],
+        "target": "recycledContent[scope=Co].preConsumerFraction"
+      },
+      {
+        "aspect": "Circularity",
+        "attribute": "Pre-consumer recycled lithium share",
+        "codes": [
+          "D5"
+        ],
+        "target": "recycledContent[scope=Li].preConsumerFraction"
+      },
+      {
+        "aspect": "Circularity",
+        "attribute": "Pre-consumer recycled lead share",
+        "codes": [
+          "D5"
+        ],
+        "target": "recycledContent[scope=Pb].preConsumerFraction"
+      },
+      {
+        "aspect": "Circularity",
+        "attribute": "Post-consumer recycled nickel share",
+        "codes": [
+          "D5"
+        ],
+        "target": "recycledContent[scope=Ni].postConsumerFraction"
+      },
+      {
+        "aspect": "Circularity",
+        "attribute": "Post-consumer recycled cobalt share",
+        "codes": [
+          "D5"
+        ],
+        "target": "recycledContent[scope=Co].postConsumerFraction"
+      },
+      {
+        "aspect": "Circularity",
+        "attribute": "Post-consumer recycled lithium share",
+        "codes": [
+          "D5"
+        ],
+        "target": "recycledContent[scope=Li].postConsumerFraction"
+      },
+      {
+        "aspect": "Circularity",
+        "attribute": "Post-consumer recycled lead share",
+        "codes": [
+          "D5"
+        ],
+        "target": "recycledContent[scope=Pb].postConsumerFraction"
+      }
+    ],
+    "d_by_core_change": {
+      "D1": 1,
+      "D2": 1,
+      "D3": 4,
+      "D4": 1,
+      "D5": 8
+    },
+    "threshold": {
+      "rule": "(a+b) >= 80% AND d == 0",
+      "a_plus_b_ok": false,
+      "zero_d_ok": false,
+      "decision": "DO NOT PROCEED (threshold failed)"
+    },
+    "sensitivity": {
+      "coverage_reading": {
+        "note": "if the 80% test were read as coverage (a+b+c) instead of (a+b)",
+        "coverage_pct": 81.7,
+        "passes_80": true,
+        "zero_d_still_required": false
+      }
+    }
+  },
+  "textiles": {
+    "file": "textiles_jrc_pilot.csv",
+    "status": "pilot (proposal-level, not final act)",
+    "rows_in_csv": 26,
+    "excluded_optional": 0,
+    "total": 26,
+    "a": 8,
+    "b": 1,
+    "c": 14,
+    "d": 3,
+    "a_plus_b_pct": 34.6,
+    "coverage_pct": 88.5,
+    "bespoke_pct": 65.4,
+    "d_only_pct": 11.5,
+    "promotion_candidates": 5,
+    "d_items": [
+      {
+        "aspect": "Producer information",
+        "attribute": "Manufacturer / importer and other relevant economic operators: identity and contact details",
+        "codes": [
+          "D1"
+        ],
+        "target": "parties[] (ukmp:Party, role=manufacturer|importer|...) + Party.address/contactPoint"
+      },
+      {
+        "aspect": "Product information",
+        "attribute": "Environmental footprint — absolute values",
+        "codes": [
+          "D2",
+          "D3"
+        ],
+        "target": "lcaSummary.indicators[] + declaredUnit"
+      },
+      {
+        "aspect": "Product information",
+        "attribute": "Environmental footprint calculation parameters",
+        "codes": [
+          "D4"
+        ],
+        "target": "lcaSummary.studyRefs[]"
+      }
+    ],
+    "d_by_core_change": {
+      "D1": 1,
+      "D2": 1,
+      "D3": 1,
+      "D4": 1
+    },
+    "threshold": {
+      "rule": "none (pilot)",
+      "decision": "n/a (pilot)"
+    },
+    "sensitivity": {}
+  },
+  "construction": {
+    "file": "construction_pipe_pilot.csv",
+    "status": "pilot (public sources; EN ISO 23387 templates not consulted)",
+    "rows_in_csv": 62,
+    "excluded_optional": 0,
+    "total": 62,
+    "a": 13,
+    "b": 3,
+    "c": 27,
+    "d": 19,
+    "a_plus_b_pct": 25.8,
+    "coverage_pct": 69.4,
+    "bespoke_pct": 74.2,
+    "d_only_pct": 30.6,
+    "promotion_candidates": 4,
+    "d_items": [
+      {
+        "aspect": "Identification & operators",
+        "attribute": "Manufacturer name, registered trade name and postal / electronic contact address",
+        "codes": [
+          "D1"
+        ],
+        "target": "issuerParty + Party.address/contactPoint"
+      },
+      {
+        "aspect": "Identification & operators",
+        "attribute": "Authorised representative: name and contact (where appointed)",
+        "codes": [
+          "D1"
+        ],
+        "target": "parties[] (role=authorised-representative) + Party.address"
+      },
+      {
+        "aspect": "Essential characteristics",
+        "attribute": "Recycled content per layer (multilayer pipes with recyclate core)",
+        "codes": [
+          "D5"
+        ],
+        "target": "recycledContent[scope=layer]"
+      },
+      {
+        "aspect": "Environmental (EN 15804+A2)",
+        "attribute": "Declared / functional unit (e.g. 1 m of pipe)",
+        "codes": [
+          "D2"
+        ],
+        "target": "lcaSummary.declaredUnit"
+      },
+      {
+        "aspect": "Environmental (EN 15804+A2)",
+        "attribute": "Climate change — total, modules C1–C4",
+        "codes": [
+          "D3"
+        ],
+        "target": "lcaSummary.indicators[] {indicator, module, value, unit}"
+      },
+      {
+        "aspect": "Environmental (EN 15804+A2)",
+        "attribute": "Climate change — total, module D",
+        "codes": [
+          "D3"
+        ],
+        "target": "lcaSummary.indicators[]"
+      },
+      {
+        "aspect": "Environmental (EN 15804+A2)",
+        "attribute": "Climate change — fossil (GWP-fossil)",
+        "codes": [
+          "D3"
+        ],
+        "target": "lcaSummary.indicators[]"
+      },
+      {
+        "aspect": "Environmental (EN 15804+A2)",
+        "attribute": "Climate change — biogenic (GWP-biogenic)",
+        "codes": [
+          "D3"
+        ],
+        "target": "lcaSummary.indicators[]"
+      },
+      {
+        "aspect": "Environmental (EN 15804+A2)",
+        "attribute": "Climate change — land use and land use change (GWP-luluc)",
+        "codes": [
+          "D3"
+        ],
+        "target": "lcaSummary.indicators[]"
+      },
+      {
+        "aspect": "Environmental (EN 15804+A2)",
+        "attribute": "Ozone depletion potential (ODP)",
+        "codes": [
+          "D3"
+        ],
+        "target": "lcaSummary.indicators[]"
+      },
+      {
+        "aspect": "Environmental (EN 15804+A2)",
+        "attribute": "Acidification potential (AP)",
+        "codes": [
+          "D3"
+        ],
+        "target": "lcaSummary.indicators[]"
+      },
+      {
+        "aspect": "Environmental (EN 15804+A2)",
+        "attribute": "Eutrophication — freshwater (EP-freshwater)",
+        "codes": [
+          "D3"
+        ],
+        "target": "lcaSummary.indicators[]"
+      },
+      {
+        "aspect": "Environmental (EN 15804+A2)",
+        "attribute": "Eutrophication — marine (EP-marine)",
+        "codes": [
+          "D3"
+        ],
+        "target": "lcaSummary.indicators[]"
+      },
+      {
+        "aspect": "Environmental (EN 15804+A2)",
+        "attribute": "Eutrophication — terrestrial (EP-terrestrial)",
+        "codes": [
+          "D3"
+        ],
+        "target": "lcaSummary.indicators[]"
+      },
+      {
+        "aspect": "Environmental (EN 15804+A2)",
+        "attribute": "Photochemical ozone formation (POCP)",
+        "codes": [
+          "D3"
+        ],
+        "target": "lcaSummary.indicators[]"
+      },
+      {
+        "aspect": "Environmental (EN 15804+A2)",
+        "attribute": "Abiotic depletion — minerals and metals (ADP-mm)",
+        "codes": [
+          "D3"
+        ],
+        "target": "lcaSummary.indicators[]"
+      },
+      {
+        "aspect": "Environmental (EN 15804+A2)",
+        "attribute": "Abiotic depletion — fossil (ADP-fossil)",
+        "codes": [
+          "D3"
+        ],
+        "target": "lcaSummary.indicators[]"
+      },
+      {
+        "aspect": "Environmental (EN 15804+A2)",
+        "attribute": "Water deprivation potential (WDP)",
+        "codes": [
+          "D3"
+        ],
+        "target": "lcaSummary.indicators[]"
+      },
+      {
+        "aspect": "Environmental (EN 15804+A2)",
+        "attribute": "EPD / LCA study reference and third-party verification (AVCP 3+)",
+        "codes": [
+          "D4"
+        ],
+        "target": "lcaSummary.studyRefs[] + verifier"
+      }
+    ],
+    "d_by_core_change": {
+      "D1": 2,
+      "D2": 1,
+      "D3": 14,
+      "D4": 1,
+      "D5": 1
+    },
+    "threshold": {
+      "rule": "bespoke share <= 20%",
+      "bespoke_ok": false,
+      "decision": "DO NOT PROCEED (threshold failed)"
+    },
+    "sensitivity": {
+      "excluding_phase2_indicators": {
+        "note": "drops the 9 EN 15804 indicators expected to become mandatory only after GWP",
+        "total": 53,
+        "bespoke_pct": 69.8,
+        "d_only_pct": 18.9
+      },
+      "d_only_reading": {
+        "note": "if 'bespoke' counted only core changes (d)",
+        "d_only_pct": 30.6,
+        "passes_20": false
+      }
+    }
+  },
+  "_d_by_core_change": {
+    "D1": {
+      "batteries": 1,
+      "textiles": 1,
+      "construction": 2
+    },
+    "D2": {
+      "batteries": 1,
+      "textiles": 1,
+      "construction": 1
+    },
+    "D3": {
+      "batteries": 4,
+      "textiles": 1,
+      "construction": 14
+    },
+    "D4": {
+      "batteries": 1,
+      "textiles": 1,
+      "construction": 1
+    },
+    "D5": {
+      "batteries": 8,
+      "construction": 1
+    }
+  }
+}

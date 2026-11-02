@@ -1,0 +1,55 @@
+name: API specification (D2.1)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "api/**"
+      - "schema/**"
+      - "examples/**"
+      - "tests/api/**"
+      - ".github/workflows/api.yml"
+  pull_request:
+    paths:
+      - "api/**"
+      - "schema/**"
+      - "examples/**"
+      - "tests/api/**"
+      - ".github/workflows/api.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  api:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install test dependencies
+        run: pip install -r tests/api/requirements.txt
+
+      - name: Lint OpenAPI (Redocly)
+        run: |
+          npx -y @redocly/cli@1 lint api/openapi.yaml --config api/redocly.yaml
+          npx -y @redocly/cli@1 lint api/dist/openapi.bundled.yaml --config api/redocly.yaml
+
+      - name: Check committed bundle is up to date
+        run: python tests/api/bundle.py --check
+
+      - name: Unit tests (spec validity, examples, passports as request bodies)
+        run: pytest tests/api -v
+
+      - name: Mock-server smoke test (Prism)
+        run: bash tests/api/mock_smoke.sh

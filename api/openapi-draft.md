@@ -1,3 +1,8 @@
+> **Superseded.** This draft operations table has been replaced by the
+> formal OpenAPI 3.1 specification, [`openapi.yaml`](openapi.yaml)
+> (WP2 deliverable D2.1, v1.0.0) — see [`README.md`](README.md). It is kept
+> for history only; where the two differ, `openapi.yaml` is authoritative.
+
 # UK Materials Passport Exchange API — Draft Surface
 
 **Status:** draft operations table, extracted from the project architecture

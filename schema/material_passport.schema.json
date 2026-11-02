@@ -1,16 +1,31 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://schema.materialspassport.org.uk/v0.1/material_passport.schema.json",
-  "title": "UK Materials Passport (ukmp:MaterialPassport) v0.1",
-  "description": "Validation schema for the credentialSubject of a UK Materials Passport. WP1 deliverable D1.2, project 10188380. Draft for steering review.",
+  "$id": "https://schema.materialspassport.org.uk/v0.2/material_passport.schema.json",
+  "title": "UK Materials Passport (ukmp:MaterialPassport) v0.2",
+  "description": "Validation schema for the credentialSubject of a UK Materials Passport. WP1 deliverable D1.2, project 10188380. v0.2 adds the WP3 baseline core extensions B1 (multi-level identity), B2 (passport succession / lifecycle), B3 (role-based field-level access tiers) and B4 (per-field applicability status), plus the optional recycledContent.feedstockSource. Strictly additive: every valid v0.1 passport remains valid. Draft for steering review.",
   "type": "object",
   "required": ["type", "passportId", "subjectType", "issuerParty", "issueDate", "composition", "recycledContent"],
   "properties": {
     "type": { "const": "ukmp:MaterialPassport" },
     "passportId": { "type": "string", "format": "uri" },
-    "subjectType": { "enum": ["MaterialBatch", "Product", "Component"] },
+    "subjectType": {
+      "enum": ["MaterialBatch", "Product", "Component", "ProductType", "Item"],
+      "description": "What the passport describes. 'ProductType' and 'Item' added in v0.2 (B1). Granularity is stated explicitly by identityLevel; when identityLevel is absent it is interpreted from subjectType (MaterialBatch ⇒ batch, ProductType ⇒ productType, Item ⇒ item; Product / Component ⇒ unspecified)."
+    },
+    "identityLevel": { "$ref": "#/$defs/identityLevel" },
     "gs1:gtin": { "type": "string", "pattern": "^[0-9]{8,14}$" },
     "gs1:lgtin": { "type": "string" },
+    "gs1:sgtin": {
+      "type": "string",
+      "pattern": "^[0-9]{8,14}\\.[!-~]{1,20}$",
+      "description": "B1 (v0.2). Serialised GTIN of an individual item, written '<GTIN>.<serial>' (same dotted convention as gs1:lgtin). The serial is 1–20 printable ASCII characters — a superset of the GS1 AI (21) character set 82; issuers SHOULD restrict serials to CSET 82. Satisfies the identifier requirement."
+    },
+    "productTypeRef": {
+      "type": "string",
+      "format": "uri",
+      "description": "B1 (v0.2). passportId of the product-type passport this batch or item instantiates. Type-level data is inherited by reference, not copied."
+    },
+    "aggregation": { "$ref": "#/$defs/aggregation" },
     "alternativeId": {
       "type": "object",
       "required": ["scheme", "value"],
@@ -33,14 +48,98 @@
     "recycledContent": { "$ref": "#/$defs/recycledContentClaim" },
     "processingHistory": { "$ref": "#/$defs/processingHistory" },
     "environmentalFootprint": { "$ref": "#/$defs/lcaSummary" },
-    "ukRegulatory": { "$ref": "#/$defs/ukRegulatoryData" }
+    "ukRegulatory": { "$ref": "#/$defs/ukRegulatoryData" },
+    "lifecycle": { "$ref": "#/$defs/lifecycle" },
+    "accessPolicy": { "$ref": "#/$defs/accessPolicy" },
+    "parties": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/party" },
+      "description": "B5 (v0.2). Parties other than the issuer (manufacturer, importer, authorised representative, distributor, …), each with its role."
+    },
+    "recycledContentDetail": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/recycledContentDetail" },
+      "description": "B9 (v0.2). Recycled-content claims scoped by material, component or layer (e.g. per-metal shares for batteries, per-layer for multilayer pipe). The aggregate recycledContent is unchanged and still required."
+    },
+    "fieldStatus": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/fieldStatusEntry" },
+      "description": "B4 (v0.2). Per-field applicability status: for named fields, whether they are required, optional, conditional or not yet applicable, and on what legal or standards basis. Lets a passport state honestly that an obligation is pending (e.g. a methodology act not yet adopted) rather than leaving a silent gap."
+    }
   },
   "anyOf": [
     { "required": ["gs1:gtin"] },
     { "required": ["gs1:lgtin"] },
+    { "required": ["gs1:sgtin"] },
     { "required": ["alternativeId"] }
   ],
   "$defs": {
+    "identityLevel": {
+      "enum": ["productType", "batch", "item"],
+      "description": "B1 (v0.2). Granularity of the passport subject: a product type / model (one passport per type, e.g. construction products under Reg (EU) 2024/3110), a batch / lot, or a serialised individual item (e.g. batteries under Reg (EU) 2023/1542 Art 77). Optional; when absent it is interpreted from subjectType."
+    },
+    "aggregation": {
+      "type": "object",
+      "description": "B1 (v0.2). Physical containment links between passported subjects. parentRefs: passports of what this subject is contained in; childRefs: passports of what it contains (e.g. module serials in a pack; a pack in a stationary storage system). Material transformation (e.g. pack → black-mass lot) is NOT aggregation — it stays an EPCIS TransformationEvent.",
+      "properties": {
+        "parentRefs": { "type": "array", "items": { "type": "string", "format": "uri" }, "uniqueItems": true, "description": "Passport URIs of containing subjects (contained-in)." },
+        "childRefs": { "type": "array", "items": { "type": "string", "format": "uri" }, "uniqueItems": true, "description": "Passport URIs of contained subjects (contains)." }
+      }
+    },
+    "lifecycle": {
+      "type": "object",
+      "description": "B2 (v0.2). Lifecycle state and passport succession. A REVISION corrects or updates the same subject (append-only, same passportId; API /revisions). A SUCCESSOR is a new passport, with a new passportId, for a subject changed by a lifecycle transition (e.g. repurposing; API /successors), linked both ways via predecessorRefs / successorRefs. Absent ⇒ status 'original'.",
+      "properties": {
+        "status": {
+          "enum": ["original", "prepared-for-reuse", "reused", "repurposed", "remanufactured", "waste", "recycled"],
+          "default": "original"
+        },
+        "predecessorRefs": { "type": "array", "items": { "type": "string", "format": "uri" }, "uniqueItems": true, "description": "Passport URI(s) this passport succeeds. Expected whenever status is not 'original'." },
+        "successorRefs": { "type": "array", "items": { "type": "string", "format": "uri" }, "uniqueItems": true, "description": "Passport URI(s) that succeed this one (added by revision when a successor is issued)." },
+        "statusChangedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "accessTier": {
+      "enum": ["public", "legitimate-interest", "authority"],
+      "description": "B3 (v0.2). Cumulative access tiers: public ⊂ legitimate-interest ⊂ authority."
+    },
+    "jsonPointer": {
+      "type": "string",
+      "pattern": "^(/([^~/]|~[01])*)*$",
+      "description": "RFC 6901 JSON Pointer, evaluated against the credentialSubject (the passport object) in its JSON form as issued. A pointer to an object or array covers everything beneath it."
+    },
+    "accessPolicy": {
+      "type": "object",
+      "description": "B3 (v0.2). Role-based, field-level access tiers. Fields not covered by fieldTiers take defaultTier (default 'public'). Exchange APIs enforce tiers by OAuth2 scope and omit withheld fields, listing their pointers as withheldPaths.",
+      "properties": {
+        "defaultTier": { "$ref": "#/$defs/accessTier", "default": "public" },
+        "fieldTiers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["path", "tier"],
+            "properties": {
+              "path": { "$ref": "#/$defs/jsonPointer" },
+              "tier": { "$ref": "#/$defs/accessTier" }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "fieldStatusEntry": {
+      "type": "object",
+      "required": ["path", "status"],
+      "description": "B4 (v0.2). Applicability status of one field.",
+      "properties": {
+        "path": { "$ref": "#/$defs/jsonPointer" },
+        "status": { "enum": ["required", "optional", "conditional", "not-yet-applicable"] },
+        "basis": { "type": "string", "description": "Legal or standards basis, e.g. 'Reg (EU) 2023/1542 Art 7 — methodology act not adopted'." },
+        "reviewBy": { "type": "string", "format": "date", "description": "Date by which the status should be re-assessed." }
+      },
+      "additionalProperties": false
+    },
     "party": {
       "type": "object",
       "required": ["name"],
@@ -59,7 +158,77 @@
             "value": { "type": "string" }
           }
         },
-        "role": { "enum": ["producer", "collector", "sorter", "reprocessor", "compounder", "converter", "manufacturer", "brand", "verifier", "other"] }
+        "role": {
+          "enum": ["producer", "collector", "sorter", "reprocessor", "compounder", "converter", "manufacturer", "brand", "verifier", "importer", "authorised-representative", "distributor", "economic-operator", "other"],
+          "description": "'importer', 'authorised-representative', 'distributor' and 'economic-operator' added in v0.2 (B5)."
+        },
+        "address": { "$ref": "#/$defs/postalAddress" },
+        "contactPoint": { "$ref": "#/$defs/contactPoint" }
+      }
+    },
+    "postalAddress": {
+      "type": "object",
+      "description": "B5 (v0.2). Postal address of a party (schema.org PostalAddress shape).",
+      "properties": {
+        "streetAddress": { "type": "string" },
+        "locality": { "type": "string" },
+        "region": { "type": "string" },
+        "postalCode": { "type": "string" },
+        "countryCode": { "type": "string", "pattern": "^[A-Z]{2}$", "description": "ISO 3166-1 alpha-2 country code, e.g. 'GB'." }
+      }
+    },
+    "contactPoint": {
+      "type": "object",
+      "description": "B5 (v0.2). Electronic contact details of a party.",
+      "properties": {
+        "email": { "type": "string", "format": "email" },
+        "telephone": { "type": "string" },
+        "url": { "type": "string", "format": "uri" }
+      }
+    },
+    "declaredUnit": {
+      "type": "object",
+      "required": ["quantity", "unit"],
+      "description": "B6 (v0.2). Declared or functional unit to which carbonFootprintPerDeclaredUnit and indicators refer, e.g. 1 kWh of total energy over service life (batteries), 1 m of pipe (construction), 1 kg.",
+      "properties": {
+        "quantity": { "type": "number", "exclusiveMinimum": 0 },
+        "unit": { "type": "string", "examples": ["kWh", "m", "kg", "m2", "item"] },
+        "description": { "type": "string" }
+      }
+    },
+    "lcaIndicator": {
+      "type": "object",
+      "required": ["indicator", "value", "unit"],
+      "description": "B7 (v0.2). One impact-indicator result, optionally for one life-cycle stage or module. Values refer to lcaSummary.declaredUnit when present, otherwise to 1 kg.",
+      "properties": {
+        "indicator": {
+          "type": "string",
+          "description": "Indicator code. EN 15804+A2 codes RECOMMENDED; PEF impact categories permitted.",
+          "examples": ["GWP-total", "GWP-fossil", "GWP-biogenic", "GWP-luluc", "ODP", "AP", "EP-freshwater", "EP-marine", "EP-terrestrial", "POCP", "ADP-mm", "ADP-fossil", "WDP"]
+        },
+        "lifecycleStage": {
+          "type": "string",
+          "description": "EN 15804 module (A1-A3, A4, A5, B1-B7, C1-C4, D) or battery carbon-footprint stage (raw-material, production, distribution, end-of-life). Absent ⇒ total over assessmentBoundary.",
+          "examples": ["A1-A3", "A4", "A5", "B1", "C1", "C2", "C3", "C4", "D", "raw-material", "production", "distribution", "end-of-life"]
+        },
+        "value": { "type": "number" },
+        "unit": { "type": "string", "examples": ["kg CO2e", "kg CFC-11e", "mol H+e", "kg Pe", "kg Ne", "mol Ne", "kg NMVOCe", "kg Sbe", "MJ", "m3 world eq. deprived"] }
+      }
+    },
+    "recycledContentDetail": {
+      "description": "B9 (v0.2). A recycled-content claim scoped to one material, component or layer. Same fields and rules as recycledContentClaim, plus a mandatory scope.",
+      "allOf": [{ "$ref": "#/$defs/recycledContentClaim" }],
+      "required": ["scope"],
+      "properties": {
+        "scope": {
+          "type": "object",
+          "minProperties": 1,
+          "properties": {
+            "material": { "type": "string", "description": "Element symbol (e.g. 'Ni', 'Co', 'Li', 'Pb'), ISO 1043 polymer code, material name or CAS number." },
+            "componentRef": { "type": "string", "description": "The component: a JSON Pointer into this passport (e.g. '/composition/substances/0') or the URI of the component's own passport." },
+            "layer": { "type": "string", "description": "Layer of a multilayer product, e.g. 'outer', 'core', 'inner'." }
+          }
+        }
       }
     },
     "composition": {
@@ -97,7 +266,11 @@
         "evidenceType": { "enum": ["epcis-event-chain", "third-party-certificate", "supplier-declaration"] },
         "evidenceRefs": { "type": "array", "items": { "type": "string", "format": "uri-reference" } },
         "verificationStatus": { "enum": ["self-declared", "evidence-linked", "independently-verified"] },
-        "verifierParty": { "$ref": "#/$defs/party" }
+        "verifierParty": { "$ref": "#/$defs/party" },
+        "feedstockSource": {
+          "enum": ["post-consumer-packaging", "post-consumer-bottle", "post-consumer-textile", "post-industrial", "post-industrial-textile", "mixed", "other"],
+          "description": "v0.2, optional, sector-neutral. Origin class of the recycled feedstock. Separates bottle, other packaging and textile feedstock (needed by the textiles profile and bottle-to-fibre claims); 'mixed' where more than one class contributes materially."
+        }
       },
       "allOf": [
         {
@@ -150,7 +323,12 @@
     },
     "lcaSummary": {
       "type": "object",
-      "required": ["carbonFootprintKgCo2ePerKg", "assessmentBoundary", "methodology"],
+      "required": ["assessmentBoundary", "methodology"],
+      "anyOf": [
+        { "required": ["carbonFootprintKgCo2ePerKg"] },
+        { "required": ["carbonFootprintPerDeclaredUnit"] }
+      ],
+      "dependentRequired": { "carbonFootprintPerDeclaredUnit": ["declaredUnit"] },
       "properties": {
         "carbonFootprintKgCo2ePerKg": { "type": "number", "minimum": 0 },
         "assessmentBoundary": { "enum": ["cradle-to-gate", "gate-to-gate", "cradle-to-grave"] },
@@ -174,7 +352,12 @@
             "assessmentBoundary": { "enum": ["cradle-to-gate", "gate-to-gate", "cradle-to-grave"] }
           }
         },
-        "netAvoidedKgCo2ePerKg": { "type": "number" }
+        "netAvoidedKgCo2ePerKg": { "type": "number" },
+        "declaredUnit": { "$ref": "#/$defs/declaredUnit" },
+        "carbonFootprintPerDeclaredUnit": { "type": "number", "minimum": 0, "description": "B6 (v0.2). Carbon footprint in kg CO2e per declaredUnit. Requires declaredUnit." },
+        "indicators": { "type": "array", "items": { "$ref": "#/$defs/lcaIndicator" }, "description": "B7 (v0.2). Multi-indicator, per-module results. EN 15804 module D MUST be carried here, never in netAvoidedKgCo2ePerKg." },
+        "studyRefs": { "type": "array", "items": { "type": "string", "format": "uri-reference" }, "description": "B8 (v0.2). LCA / carbon-footprint study, EPD or calculation-parameter documents." },
+        "verifierParty": { "$ref": "#/$defs/party", "description": "B8 (v0.2). Independent verifier of the LCA study or EPD." }
       }
     },
     "ukRegulatoryData": {

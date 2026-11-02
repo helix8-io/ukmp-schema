@@ -1,0 +1,238 @@
+{
+  "@context": [
+    "https://schema.materialspassport.org.uk/v0.2/context.jsonld"
+  ],
+  "type": "ukmp:MaterialPassport",
+  "passportId": "https://passports.example-second-life.co.uk/passports/urn:uuid:5b1e9c7a-2f40-4d8e-9a61-0c3d7e2b8f15",
+  "subjectType": "Item",
+  "identityLevel": "item",
+  "gs1:sgtin": "09506000134352.SL-2026-000481",
+  "productTypeRef": "https://passports.example-second-life.co.uk/passports/types/SL-ESS-48",
+  "aggregation": {
+    "parentRefs": [
+      "https://passports.example-second-life.co.uk/passports/systems/BESS-DEMO-0007"
+    ],
+    "childRefs": [
+      "https://passports.example-second-life.co.uk/passports/modules/SL-2026-000481-M01",
+      "https://passports.example-second-life.co.uk/passports/modules/SL-2026-000481-M02",
+      "https://passports.example-second-life.co.uk/passports/modules/SL-2026-000481-M03",
+      "https://passports.example-second-life.co.uk/passports/modules/SL-2026-000481-M04"
+    ]
+  },
+  "lifecycle": {
+    "status": "repurposed",
+    "predecessorRefs": [
+      "https://passports.example-ev-oem.co.uk/passports/urn:uuid:0d4f2a96-81c3-4b7e-a5d0-6e9b13c47a28"
+    ],
+    "statusChangedAt": "2026-10-20T09:30:00Z"
+  },
+  "sectorProfile": "https://schema.materialspassport.org.uk/v0.2/profiles/batteries",
+  "conformanceLevel": 1,
+  "issuerParty": {
+    "name": "Example Second-Life Storage Ltd",
+    "role": "manufacturer",
+    "address": {
+      "streetAddress": "1 Example Business Park (illustrative)",
+      "locality": "Belfast",
+      "postalCode": "BT0 0XX",
+      "countryCode": "GB"
+    },
+    "contactPoint": {
+      "email": "passports@example-second-life.co.uk",
+      "url": "https://www.example-second-life.co.uk/battery-passport"
+    }
+  },
+  "parties": [
+    {
+      "name": "Example EV Manufacturer GmbH",
+      "role": "manufacturer",
+      "address": {
+        "streetAddress": "Beispielstraße 1 (illustrative)",
+        "locality": "Stuttgart",
+        "postalCode": "70000",
+        "countryCode": "DE"
+      },
+      "contactPoint": {
+        "email": "battery-passport@example-ev-oem.co.uk"
+      }
+    },
+    {
+      "name": "Example Battery Imports Ltd",
+      "role": "importer",
+      "address": {
+        "streetAddress": "2 Example Dock Road (illustrative)",
+        "locality": "Larne",
+        "postalCode": "BT00 0XX",
+        "countryCode": "GB"
+      },
+      "contactPoint": {
+        "email": "compliance@example-battery-imports.co.uk",
+        "telephone": "+44 28 0000 0000"
+      }
+    }
+  ],
+  "issueDate": "2026-10-21",
+  "description": "ILLUSTRATIVE EXAMPLE — not real company or product data. Item-level SUCCESSOR passport for an ex-EV lithium-ion pack (NMC 622, ~380 kg) repurposed into a stationary storage unit. The original EV passport is linked by lifecycle.predecessorRefs; under Reg (EU) 2023/1542 Art 77(7) the repurposing operator takes responsibility for this new passport. Battery-specific attributes (state of health, performance, labels, due diligence) are carried by the batteries profile, which imports the Battery Pass data model v1.2 — not reproduced here. The environmentalFootprint block is a voluntary, illustrative estimate per kWh: the regulatory Art 7 declaration is not yet applicable (see fieldStatus). Per-metal recycledContentDetail is likewise voluntary ahead of the Art 8 documentation obligation.",
+  "composition": {
+    "materialFamily": "composite",
+    "substances": [
+      {
+        "name": "Cathode active material (LiNi0.6Mn0.2Co0.2O2), illustrative",
+        "massFraction": 0.22
+      },
+      {
+        "name": "Anode active material (graphite), illustrative",
+        "massFraction": 0.13
+      },
+      {
+        "name": "Electrolyte (LiPF6 in carbonate solvents), illustrative",
+        "massFraction": 0.08
+      },
+      {
+        "name": "Copper and aluminium current collectors, illustrative",
+        "massFraction": 0.12
+      },
+      {
+        "name": "Pack housing, busbars, BMS and thermal management, illustrative",
+        "massFraction": 0.45
+      }
+    ]
+  },
+  "recycledContent": {
+    "preConsumerFraction": 0.007,
+    "postConsumerFraction": 0.003,
+    "totalRecycledFraction": 0.01,
+    "calculationMethod": "declared",
+    "evidenceType": "supplier-declaration",
+    "verificationStatus": "self-declared"
+  },
+  "recycledContentDetail": [
+    {
+      "scope": {
+        "material": "Co",
+        "componentRef": "/composition/substances/0"
+      },
+      "preConsumerFraction": 0.08,
+      "postConsumerFraction": 0.04,
+      "totalRecycledFraction": 0.12,
+      "calculationMethod": "declared",
+      "evidenceType": "supplier-declaration",
+      "evidenceRefs": [
+        "https://passports.example-ev-oem.co.uk/declarations/cathode-recycled-content-ILLUSTRATIVE.pdf"
+      ],
+      "verificationStatus": "self-declared"
+    },
+    {
+      "scope": {
+        "material": "Ni",
+        "componentRef": "/composition/substances/0"
+      },
+      "preConsumerFraction": 0.04,
+      "postConsumerFraction": 0.0,
+      "totalRecycledFraction": 0.04,
+      "calculationMethod": "declared",
+      "evidenceType": "supplier-declaration",
+      "verificationStatus": "self-declared"
+    },
+    {
+      "scope": {
+        "material": "Li",
+        "componentRef": "/composition/substances/0"
+      },
+      "preConsumerFraction": 0.0,
+      "postConsumerFraction": 0.0,
+      "totalRecycledFraction": 0.0,
+      "calculationMethod": "declared",
+      "evidenceType": "supplier-declaration",
+      "verificationStatus": "self-declared"
+    }
+  ],
+  "environmentalFootprint": {
+    "declaredUnit": {
+      "quantity": 1,
+      "unit": "kWh",
+      "description": "1 kWh of total energy delivered over the expected second-life service (illustrative)"
+    },
+    "carbonFootprintPerDeclaredUnit": 9.5,
+    "assessmentBoundary": "cradle-to-grave",
+    "methodology": "VOLUNTARY and ILLUSTRATIVE — ISO 14067-based estimate allocating the original cell footprint over first- and second-life energy throughput. NOT a Reg (EU) 2023/1542 Art 7 carbon footprint declaration.",
+    "indicators": [
+      {
+        "indicator": "GWP-total",
+        "lifecycleStage": "raw-material",
+        "value": 6.1,
+        "unit": "kg CO2e"
+      },
+      {
+        "indicator": "GWP-total",
+        "lifecycleStage": "production",
+        "value": 2.4,
+        "unit": "kg CO2e"
+      },
+      {
+        "indicator": "GWP-total",
+        "lifecycleStage": "distribution",
+        "value": 0.3,
+        "unit": "kg CO2e"
+      },
+      {
+        "indicator": "GWP-total",
+        "lifecycleStage": "end-of-life",
+        "value": 0.7,
+        "unit": "kg CO2e"
+      }
+    ],
+    "studyRefs": [
+      "https://www.example-second-life.co.uk/studies/SL-ESS-48-footprint-ILLUSTRATIVE.pdf"
+    ]
+  },
+  "ukRegulatory": {
+    "permits": [
+      {
+        "type": "environmental-permit",
+        "ref": "EPR/XX0000XX (illustrative)"
+      }
+    ]
+  },
+  "accessPolicy": {
+    "defaultTier": "public",
+    "fieldTiers": [
+      {
+        "path": "/composition/substances",
+        "tier": "legitimate-interest"
+      },
+      {
+        "path": "/aggregation/childRefs",
+        "tier": "legitimate-interest"
+      },
+      {
+        "path": "/ukRegulatory/permits",
+        "tier": "authority"
+      }
+    ]
+  },
+  "fieldStatus": [
+    {
+      "path": "/environmentalFootprint",
+      "status": "not-yet-applicable",
+      "basis": "Reg (EU) 2023/1542 Art 7 — carbon footprint declaration not yet applicable: calculation/verification methodology delegated act not adopted at issue date",
+      "reviewBy": "2027-02-18"
+    },
+    {
+      "path": "/recycledContentDetail",
+      "status": "not-yet-applicable",
+      "basis": "Reg (EU) 2023/1542 Art 8 — documentation of recycled cobalt, lead, lithium and nickel shares applies from 18 Aug 2028 at the earliest, subject to the methodology delegated act; values here are voluntary supplier declarations",
+      "reviewBy": "2028-08-18"
+    },
+    {
+      "path": "/recycledContent",
+      "status": "conditional",
+      "basis": "Core field required by this schema; aggregate populated as a self-declared figure until Art 8 documentation applies"
+    },
+    {
+      "path": "/composition/substances",
+      "status": "required",
+      "basis": "Reg (EU) 2023/1542 Annex XIII pt 2 — detailed composition, legitimate-interest access"
+    }
+  ]
+}

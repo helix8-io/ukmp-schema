@@ -1,0 +1,19 @@
+{
+  "passport": {
+    "passportId": "https://passports.example-sme.co.uk/passports/urn:uuid:e4e73173-c5cb-52f5-8674-0abb4a098ea9"
+  },
+  "recipient": {
+    "name": "Example Converter Ltd",
+    "gs1:gln": "5060888000031",
+    "endpoint": "https://ukmp.example-converter.co.uk/ukmp/v1"
+  },
+  "despatch": {
+    "sscc": "350601234500000038",
+    "despatchAdviceId": "DA-2026-10-0219",
+    "shippingEventID": "https://passports.example-sme.co.uk/events/despatch-DA-2026-10-0219",
+    "expectedDeliveryDate": "2026-10-30"
+  },
+  "disclosureTier": "legitimate-interest",
+  "mediaType": "application/ld+json",
+  "callbackUrl": "https://erp.example-sme.co.uk/hooks/ukmp"
+}

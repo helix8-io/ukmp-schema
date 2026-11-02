@@ -51,8 +51,8 @@
       "preConsumerFraction": 0.0,
       "postConsumerFraction": 0.87,
       "totalRecycledFraction": 0.87,
-      "calculationMethod": "mass-balance",
-      "chainOfCustodyModel": "mass-balance",
+      "calculationMethod": "controlled-blending",
+      "chainOfCustodyModel": "segregated",
       "evidenceType": "epcis-event-chain",
       "evidenceRefs": [
         "urn:uuid:e1-intake-2026-07-28",
@@ -101,7 +101,7 @@
     "type": "DataIntegrityProof",
     "cryptosuite": "ecdsa-jcs-2019",
     "created": "2026-08-03T14:22:04Z",
-    "verificationMethod": "https://passports.example-recycler.co.uk/.well-known/keys/2026-1#key-1",
+    "verificationMethod": "https://passports.example-recycler.co.uk/.well-known/ukmp/keys#2026-1",
     "proofPurpose": "assertionMethod",
     "proofValue": "z3FXQjecWufY46...ILLUSTRATIVE-NOT-A-REAL-SIGNATURE...9vKpW2a"
   }

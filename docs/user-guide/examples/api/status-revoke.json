@@ -1,0 +1,5 @@
+{
+  "action": "revoke",
+  "reason": "recall",
+  "detail": "Contamination above specification found in retained sample RS-0142-2."
+}
