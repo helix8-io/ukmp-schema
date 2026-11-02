@@ -30,7 +30,7 @@ keywords:
   - Materials 4.0
 license: Apache-2.0
 url: "https://www.materiai.co.uk"
-repository-code: "https://github.com/materiAI/ukmp-schema"
+repository-code: "https://github.com/helix8-io/ukmp-schema"
 identifiers:
   - type: other
     value: "Innovate UK project 10188380"

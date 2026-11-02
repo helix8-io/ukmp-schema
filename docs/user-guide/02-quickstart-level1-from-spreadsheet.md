@@ -18,7 +18,7 @@ tools/validate.py                     (PASS / FAIL with reasons)
 ## Step 0: get the tools
 
 ```bash
-git clone https://github.com/materiAI/ukmp-schema.git
+git clone https://github.com/helix8-io/ukmp-schema.git
 cd ukmp-schema
 pip install -r tools/requirements.txt     # only needed for validate.py
 ```
