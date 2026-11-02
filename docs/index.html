@@ -3,70 +3,91 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>UK Materials Passport Schema — interactive playground</title>
-<meta name="description" content="Build and validate a UK materials passport in your browser. Recycled content is computed from the event chain, not typed in. Open source (Apache-2.0).">
+<title>UK Materials Passport Schema v0.2 — interactive playground</title>
+<meta name="description" content="Build and validate a UK materials passport (schema v0.2) in your browser. Recycled content is computed from the event chain, not typed in. Open source (Apache-2.0).">
 <style>
   :root{--ink:#10201A;--bg:#0E1A15;--panel:#13231C;--card:#182B22;--green:#1E8A5C;--mint:#35C58F;--pale:#EDF6F1;--mut:#8FA79B;--line:#24382E;--amber:#D97706;--red:#DC2626;--white:#FFF}
   *{margin:0;padding:0;box-sizing:border-box}
   body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--pale);line-height:1.5;-webkit-font-smoothing:antialiased}
-  .wrap{max-width:1060px;margin:0 auto;padding:0 20px}
+  a{color:var(--mint)}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.85em;overflow-wrap:anywhere}
+  .wrap{max-width:1060px;margin:0 auto;padding:0 16px}
   header{padding:22px 0 6px}
   header .wrap{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
   .wm{font-weight:800;font-size:1.3rem;color:var(--white)}
   .wm span{color:var(--mint)}
   .by{color:var(--mut);font-size:.7rem;letter-spacing:.13em;text-transform:uppercase}
+  .ver{display:inline-block;margin-left:8px;padding:1px 8px;border-radius:999px;border:1px solid var(--amber);color:var(--amber);font-size:.62rem;letter-spacing:.08em;vertical-align:middle}
   h1{font-size:clamp(1.5rem,4vw,2.1rem);font-weight:800;color:var(--white);margin:14px 0 6px}
-  .sub{color:var(--mut);max-width:46rem;font-size:.95rem}
-  .tabs{display:flex;gap:8px;margin:20px 0 16px}
+  .sub{color:var(--mut);max-width:48rem;font-size:.95rem}
+  .links{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .links a{font-size:.8rem;text-decoration:none;padding:5px 11px;border:1px solid var(--line);border-radius:999px;background:var(--panel);color:var(--pale)}
+  .links a:hover{border-color:var(--mint)}
+  .links a b{color:var(--mint);font-weight:700}
+  .tabs{display:flex;gap:8px;margin:20px 0 16px;flex-wrap:wrap}
   .tab{padding:9px 18px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--pale);font-weight:700;font-size:.9rem;cursor:pointer}
   .tab.on{background:var(--green);border-color:var(--green);color:#fff}
-  .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
-  @media(max-width:860px){.grid{grid-template-columns:1fr}}
-  .box{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+  .grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}
+  @media(max-width:860px){.grid{grid-template-columns:minmax(0,1fr)}}
+  .box{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;min-width:0}
   .box h3{font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mint);margin-bottom:10px}
   label{display:block;font-size:.78rem;color:var(--mut);margin:10px 0 3px}
   input,select,textarea{width:100%;background:#0B1512;border:1px solid var(--line);border-radius:8px;color:var(--pale);padding:8px 10px;font-size:.9rem;font-family:inherit}
   textarea{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.75rem;min-height:340px;white-space:pre;resize:vertical}
+  .tscroll{overflow-x:auto}
   table{width:100%;border-collapse:collapse;margin-top:6px;font-size:.82rem}
   th{text-align:left;color:var(--mut);font-weight:600;font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;padding:4px 6px;border-bottom:1px solid var(--line)}
   td{padding:4px 6px;border-bottom:1px dashed var(--line)}
-  td input{padding:5px 7px;font-size:.82rem}
+  td input{padding:5px 7px;font-size:.82rem;min-width:62px}
   td.step{color:var(--pale);font-weight:600;white-space:nowrap}
-  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0 4px}
-  .stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px;text-align:center}
-  .stat .n{font-size:1.5rem;font-weight:800;color:var(--mint)}
+  .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:4px 0 4px}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px;text-align:center;min-width:0}
+  .stat .n{font-size:1.5rem;font-weight:800;color:var(--mint);overflow-wrap:anywhere}
+  .stat .n.sm{font-size:1rem;line-height:1.9rem}
   .stat .n.bad{color:var(--red)}
+  .stat .n.dim{color:var(--mut)}
   .stat .l{font-size:.62rem;color:var(--mut);text-transform:uppercase;letter-spacing:.07em}
+  .stat .s{font-size:.66rem;color:var(--mut)}
   .report{margin-top:12px}
-  .check{display:flex;gap:9px;align-items:flex-start;padding:7px 0;border-bottom:1px dashed var(--line);font-size:.86rem}
+  .check{display:flex;gap:9px;align-items:flex-start;padding:7px 0;border-bottom:1px dashed var(--line);font-size:.86rem;overflow-wrap:anywhere}
   .check:last-child{border-bottom:none}
+  .check ul{margin:4px 0 0 16px;font-size:.8rem;color:#C9E4D6}
   .ic{flex:0 0 auto;width:19px;height:19px;border-radius:50%;display:grid;place-items:center;font-size:.65rem;font-weight:800}
   .ic.p{background:rgba(53,197,143,.16);color:var(--mint)}
   .ic.f{background:rgba(220,38,38,.16);color:#F87171}
   .ic.w{background:rgba(217,119,6,.16);color:var(--amber)}
+  .ic.i{background:rgba(143,167,155,.16);color:var(--mut)}
   .verdict{margin-top:12px;padding:12px 14px;border-radius:10px;font-weight:700;font-size:.95rem}
   .verdict.ok{background:rgba(53,197,143,.12);color:var(--mint);border:1px solid rgba(53,197,143,.35)}
   .verdict.bad{background:rgba(220,38,38,.12);color:#F87171;border:1px solid rgba(220,38,38,.35)}
   .btn{display:inline-block;background:var(--green);color:#fff;font-weight:700;padding:9px 16px;border-radius:9px;border:none;font-size:.88rem;cursor:pointer;margin:8px 6px 0 0}
   .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--pale)}
   .btn.mini{padding:6px 11px;font-size:.78rem;margin:0 6px 6px 0;background:var(--panel);border:1px solid var(--line);color:var(--pale)}
+  .btn.mini.bad{border-color:rgba(220,38,38,.45)}
   .btn.mini:hover,.btn.ghost:hover{border-color:var(--mint)}
   pre{background:#0B1512;border:1px solid var(--line);border-radius:10px;padding:12px;font-size:.72rem;overflow:auto;max-height:420px;color:#C9E4D6}
   footer{margin-top:34px;padding:20px 0 36px;border-top:1px solid var(--line);color:var(--mut);font-size:.78rem}
-  footer a{color:var(--mint);text-decoration:none}
+  footer a{text-decoration:none}
   .hide{display:none}
   .note{font-size:.75rem;color:var(--mut);margin-top:8px}
 </style>
 </head>
 <body>
 <header><div class="wrap">
-  <div><div class="wm">materi<span>AI</span></div><div class="by">UK materials passport schema · open playground</div></div>
-  <div class="by"><a href="https://github.com/materiAI/ukmp-schema" style="color:var(--mint);text-decoration:none">github.com/materiAI/ukmp-schema</a></div>
+  <div><div class="wm">materi<span>AI</span></div><div class="by">UK materials passport schema · open playground <span class="ver">schema v0.2-draft</span></div></div>
+  <div class="by"><a id="repoLink" href="https://github.com/materiAI/ukmp-schema" style="text-decoration:none">github.com/materiAI/ukmp-schema</a></div>
 </div></header>
 
 <div class="wrap">
   <h1>Try the toolkit in your browser</h1>
-  <p class="sub">Build a materials passport from process data and watch recycled content get <b style="color:var(--pale)">computed from the event chain</b> — or paste any passport and validate it. Everything runs locally in your browser; nothing is uploaded. The checks mirror <code>tools/validate.py</code> from the open-source toolkit.</p>
+  <p class="sub">Build a materials passport from process data and watch recycled content get <b style="color:var(--pale)">computed from the event chain</b> — or paste any passport and validate it against <b style="color:var(--pale)">schema v0.2</b> (multi-level identity, passport succession, access tiers, field applicability, scoped recycled content). Everything runs locally in your browser; nothing is uploaded. The checks mirror <code>tools/validate.py</code>.</p>
+  <nav class="links" aria-label="Project documents">
+    <a href="https://github.com/materiAI/ukmp-schema/blob/main/spec/ukmp-schema-v0.2.md">Specification <b>v0.2</b></a>
+    <a href="https://github.com/materiAI/ukmp-schema/blob/main/schema/material_passport.schema.json">JSON Schema</a>
+    <a href="https://github.com/materiAI/ukmp-schema/blob/main/api/openapi.yaml">Exchange API — <code>api/openapi.yaml</code> <b>D2.1</b></a>
+    <a href="https://github.com/materiAI/ukmp-schema/tree/main/docs/user-guide">User guides — <code>docs/user-guide/</code> <b>D2.3</b></a>
+    <a href="https://github.com/materiAI/ukmp-schema/blob/main/CHANGELOG.md">Changelog</a>
+  </nav>
 
   <div class="tabs">
     <button class="tab on" id="tabB" onclick="mode('b')">Build a passport</button>
@@ -78,14 +99,14 @@
     <div>
       <div class="box">
         <h3>1 · Batch</h3>
-        <label>Material</label>
+        <label for="mat">Material</label>
         <select id="mat"><option>HDPE</option><option>LDPE</option><option>PP</option><option>PET</option></select>
-        <label>Batch ID</label>
+        <label for="bid">Batch ID</label>
         <input id="bid" value="B26-0803-HD">
       </div>
       <div class="box" style="margin-top:14px">
         <h3>2 · Process events — edit the weights</h3>
-        <table>
+        <div class="tscroll"><table>
           <tr><th>Step</th><th>In (kg)</th><th>Out (kg)</th><th>Waste (kg)</th></tr>
           <tr><td class="step">Intake (PC bales)</td><td><input type="number" id="i0" value="1240"></td><td>—</td><td>—</td></tr>
           <tr><td class="step">Shred</td><td><input type="number" id="s_i" value="1240"></td><td><input type="number" id="s_o" value="1176"></td><td><input type="number" id="s_w" value="64"></td></tr>
@@ -94,8 +115,8 @@
           <tr><td class="step">Blend: PCR used</td><td><input type="number" id="b_p" value="890"></td><td rowspan="2" style="vertical-align:middle"><input type="number" id="b_o" value="1004"></td><td rowspan="2" style="vertical-align:middle"><input type="number" id="b_w" value="16"></td></tr>
           <tr><td class="step">Blend: virgin carrier</td><td><input type="number" id="b_v" value="130"></td></tr>
           <tr><td class="step">Pack (despatched)</td><td><input type="number" id="p_i" value="1004"></td><td><input type="number" id="p_o" value="1000"></td><td><input type="number" id="p_w" value="4"></td></tr>
-        </table>
-        <p class="note">Try it: bump "virgin carrier" to 500 and watch the recycled figure fall — or make the shred output bigger than its input and watch validation fail.</p>
+        </table></div>
+        <p class="note">Try it: bump "virgin carrier" to 500 and watch the recycled figure fall — or make the shred output bigger than its input and watch validation fail. Steps reconcile within ±0.5 kg (weighbridge rounding), as in <code>tools/validate.py</code>.</p>
       </div>
     </div>
     <div>
@@ -104,10 +125,11 @@
         <div class="stats">
           <div class="stat"><div class="n" id="pcr">—</div><div class="l">post-consumer recycled</div></div>
           <div class="stat"><div class="n" id="yld">—</div><div class="l">process yield</div></div>
-          <div class="stat"><div class="n" id="mb">—</div><div class="l">mass balance</div></div>
+          <div class="stat"><div class="n" id="mb">—</div><div class="l">weights reconcile</div></div>
         </div>
         <div class="report" id="repB"></div>
         <div id="verB"></div>
+        <p class="note">Declared as <code>controlled-blending</code> with a <code>segregated</code> chain of custody (spec §4.3): step-level <code>ukmp:massBalanceDelta</code> is weight reconciliation, not an ISO 22095 mass-balance claim.</p>
         <button class="btn" onclick="downloadJson()">Download passport JSON-LD</button>
         <button class="btn ghost" onclick="showJson()">View JSON-LD</button>
       </div>
@@ -118,38 +140,393 @@
   <!-- VALIDATE -->
   <div id="paneV" class="grid hide">
     <div class="box">
-      <h3>Paste a passport, or load a preset</h3>
-      <div>
-        <button class="btn mini" onclick="preset('good')">Level 3 example</button>
-        <button class="btn mini" onclick="preset('min')">Level 1 minimal</button>
-        <button class="btn mini" onclick="preset('bad')">Tampered claim</button>
+      <h3>Paste a passport, or load an example</h3>
+      <div id="presets">
+        <button class="btn mini" data-preset="hdpe" onclick="preset('hdpe')">Recycled HDPE · Level 3</button>
+        <button class="btn mini" data-preset="l1" onclick="preset('l1')">Level 1 minimal</button>
+        <button class="btn mini" data-preset="battery" onclick="preset('battery')">Battery item · repurposed</button>
+        <button class="btn mini" data-preset="pipeType" onclick="preset('pipeType')">Pipe product type</button>
+        <button class="btn mini" data-preset="pipeBatch" onclick="preset('pipeBatch')">Pipe batch</button>
+        <button class="btn mini bad" data-preset="broken" onclick="preset('broken')">Tampered + inconsistent</button>
       </div>
-      <textarea id="pasted" spellcheck="false" placeholder='Paste JSON-LD passport here…'></textarea>
-      <button class="btn" onclick="runValidate()">Validate</button>
+      <textarea id="pasted" spellcheck="false" aria-label="Passport JSON-LD or compact JWS" placeholder='Paste a JSON-LD passport (bare or VC-enveloped) or a compact JWS here…'></textarea>
+      <button class="btn" id="runV" onclick="runValidate()">Validate</button>
+      <p class="note" id="srcNote">Loading schema and examples…</p>
     </div>
     <div class="box">
       <h3>Validation report</h3>
-      <div class="report" id="repV"><p class="note">Load a preset or paste a passport, then Validate.</p></div>
+      <div class="stats">
+        <div class="stat"><div class="n dim" id="vLevel">—</div><div class="l">conformance level</div><div class="s" id="vLevelName">&nbsp;</div></div>
+        <div class="stat"><div class="n sm dim" id="vIdent">—</div><div class="l">identity level</div><div class="s" id="vIdentSrc">&nbsp;</div></div>
+        <div class="stat"><div class="n sm dim" id="vLife">—</div><div class="l">lifecycle status</div><div class="s" id="vLifeSrc">&nbsp;</div></div>
+      </div>
+      <div class="report" id="repV"><p class="note">Load an example or paste a passport, then Validate.</p></div>
       <div id="verV"></div>
     </div>
   </div>
 
   <footer>
-    <p><b style="color:var(--pale)">This is a demonstration implementation</b> of the UK Materials Passport Schema v0.1-draft checks (structure, recycled-content arithmetic, mass-balance reconciliation, conformance level). The canonical validator is <a href="https://github.com/materiAI/ukmp-schema">tools/validate.py in the repository</a>. Cryptographic proof verification (Level 3) is indicated, not performed, in this browser demo.</p>
+    <p><b style="color:var(--pale)">This is a demonstration implementation</b> of the UK Materials Passport Schema v0.2-draft checks: JSON Schema 2020-12 validation against <code>schema/material_passport.schema.json</code>, recycled-content arithmetic (including every <code>recycledContentDetail</code> entry), mass-balance reconciliation, conformance-level detection, and the v0.2 identity, lifecycle and JSON Pointer warnings. Every v0.1 passport remains valid. The canonical validator is <a href="https://github.com/materiAI/ukmp-schema/blob/main/tools/validate.py">tools/validate.py</a>. Cryptographic proof verification (Level 3) is indicated, not performed — in this demo and in <code>validate.py</code>. All example values are illustrative.</p>
     <p style="margin-top:6px">Apache-2.0 · Developed by <a href="https://www.materiai.co.uk">Helix8 Ltd (materiAI)</a> under Innovate UK project 10188380 (National Materials Innovation Programme) · Validation partners: Plaswire Ltd, Border Plastics Recycling Ltd.</p>
   </footer>
 </div>
 
+<!--
+  Inline copies of schema/material_passport.schema.json and examples/*.jsonld (v0.2).
+  When the page is served from the repository root (e.g. python3 -m http.server, then /docs/),
+  the live files in ../schema and ../examples are fetched and used instead; GitHub Pages
+  (serving /docs only) and file:// fall back to these copies. Keep them in sync with the
+  repository files when the schema or examples change.
+-->
+<script type="application/json" id="inline-schema">{"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://schema.materialspassport.org.uk/v0.2/material_passport.schema.json","title":"UK Materials Passport (ukmp:MaterialPassport) v0.2","description":"Validation schema for the credentialSubject of a UK Materials Passport. WP1 deliverable D1.2, project 10188380. v0.2 adds the WP3 baseline core extensions B1 (multi-level identity), B2 (passport succession / lifecycle), B3 (role-based field-level access tiers) and B4 (per-field applicability status), plus the optional recycledContent.feedstockSource. Strictly additive: every valid v0.1 passport remains valid. Draft for steering review.","type":"object","required":["type","passportId","subjectType","issuerParty","issueDate","composition","recycledContent"],"properties":{"type":{"const":"ukmp:MaterialPassport"},"passportId":{"type":"string","format":"uri"},"subjectType":{"enum":["MaterialBatch","Product","Component","ProductType","Item"],"description":"What the passport describes. 'ProductType' and 'Item' added in v0.2 (B1). Granularity is stated explicitly by identityLevel; when identityLevel is absent it is interpreted from subjectType (MaterialBatch ⇒ batch, ProductType ⇒ productType, Item ⇒ item; Product / Component ⇒ unspecified)."},"identityLevel":{"$ref":"#/$defs/identityLevel"},"gs1:gtin":{"type":"string","pattern":"^[0-9]{8,14}$"},"gs1:lgtin":{"type":"string"},"gs1:sgtin":{"type":"string","pattern":"^[0-9]{8,14}\\.[!-~]{1,20}$","description":"B1 (v0.2). Serialised GTIN of an individual item, written '<GTIN>.<serial>' (same dotted convention as gs1:lgtin). The serial is 1–20 printable ASCII characters — a superset of the GS1 AI (21) character set 82; issuers SHOULD restrict serials to CSET 82. Satisfies the identifier requirement."},"productTypeRef":{"type":"string","format":"uri","description":"B1 (v0.2). passportId of the product-type passport this batch or item instantiates. Type-level data is inherited by reference, not copied."},"aggregation":{"$ref":"#/$defs/aggregation"},"alternativeId":{"type":"object","required":["scheme","value"],"properties":{"scheme":{"type":"string","description":"Identifier scheme. EN 18219:2026 permitted product-identifier schemes are recommended for EU DPP registry registrability; other schemes remain valid.","examples":["gs1-digital-link","iec-61406","did","doi"]},"value":{"type":"string"}}},"sectorProfile":{"type":"string","format":"uri"},"conformanceLevel":{"enum":[1,2,3]},"issuerParty":{"$ref":"#/$defs/party"},"issueDate":{"type":"string","format":"date"},"lastUpdated":{"type":"string","format":"date-time"},"description":{"type":"string"},"composition":{"$ref":"#/$defs/composition"},"recycledContent":{"$ref":"#/$defs/recycledContentClaim"},"processingHistory":{"$ref":"#/$defs/processingHistory"},"environmentalFootprint":{"$ref":"#/$defs/lcaSummary"},"ukRegulatory":{"$ref":"#/$defs/ukRegulatoryData"},"lifecycle":{"$ref":"#/$defs/lifecycle"},"accessPolicy":{"$ref":"#/$defs/accessPolicy"},"parties":{"type":"array","items":{"$ref":"#/$defs/party"},"description":"B5 (v0.2). Parties other than the issuer (manufacturer, importer, authorised representative, distributor, …), each with its role."},"recycledContentDetail":{"type":"array","items":{"$ref":"#/$defs/recycledContentDetail"},"description":"B9 (v0.2). Recycled-content claims scoped by material, component or layer (e.g. per-metal shares for batteries, per-layer for multilayer pipe). The aggregate recycledContent is unchanged and still required."},"fieldStatus":{"type":"array","items":{"$ref":"#/$defs/fieldStatusEntry"},"description":"B4 (v0.2). Per-field applicability status: for named fields, whether they are required, optional, conditional or not yet applicable, and on what legal or standards basis. Lets a passport state honestly that an obligation is pending (e.g. a methodology act not yet adopted) rather than leaving a silent gap."}},"anyOf":[{"required":["gs1:gtin"]},{"required":["gs1:lgtin"]},{"required":["gs1:sgtin"]},{"required":["alternativeId"]}],"$defs":{"identityLevel":{"enum":["productType","batch","item"],"description":"B1 (v0.2). Granularity of the passport subject: a product type / model (one passport per type, e.g. construction products under Reg (EU) 2024/3110), a batch / lot, or a serialised individual item (e.g. batteries under Reg (EU) 2023/1542 Art 77). Optional; when absent it is interpreted from subjectType."},"aggregation":{"type":"object","description":"B1 (v0.2). Physical containment links between passported subjects. parentRefs: passports of what this subject is contained in; childRefs: passports of what it contains (e.g. module serials in a pack; a pack in a stationary storage system). Material transformation (e.g. pack → black-mass lot) is NOT aggregation — it stays an EPCIS TransformationEvent.","properties":{"parentRefs":{"type":"array","items":{"type":"string","format":"uri"},"uniqueItems":true,"description":"Passport URIs of containing subjects (contained-in)."},"childRefs":{"type":"array","items":{"type":"string","format":"uri"},"uniqueItems":true,"description":"Passport URIs of contained subjects (contains)."}}},"lifecycle":{"type":"object","description":"B2 (v0.2). Lifecycle state and passport succession. A REVISION corrects or updates the same subject (append-only, same passportId; API /revisions). A SUCCESSOR is a new passport, with a new passportId, for a subject changed by a lifecycle transition (e.g. repurposing; API /successors), linked both ways via predecessorRefs / successorRefs. Absent ⇒ status 'original'.","properties":{"status":{"enum":["original","prepared-for-reuse","reused","repurposed","remanufactured","waste","recycled"],"default":"original"},"predecessorRefs":{"type":"array","items":{"type":"string","format":"uri"},"uniqueItems":true,"description":"Passport URI(s) this passport succeeds. Expected whenever status is not 'original'."},"successorRefs":{"type":"array","items":{"type":"string","format":"uri"},"uniqueItems":true,"description":"Passport URI(s) that succeed this one (added by revision when a successor is issued)."},"statusChangedAt":{"type":"string","format":"date-time"}}},"accessTier":{"enum":["public","legitimate-interest","authority"],"description":"B3 (v0.2). Cumulative access tiers: public ⊂ legitimate-interest ⊂ authority."},"jsonPointer":{"type":"string","pattern":"^(/([^~/]|~[01])*)*$","description":"RFC 6901 JSON Pointer, evaluated against the credentialSubject (the passport object) in its JSON form as issued. A pointer to an object or array covers everything beneath it."},"accessPolicy":{"type":"object","description":"B3 (v0.2). Role-based, field-level access tiers. Fields not covered by fieldTiers take defaultTier (default 'public'). Exchange APIs enforce tiers by OAuth2 scope and omit withheld fields, listing their pointers as withheldPaths.","properties":{"defaultTier":{"$ref":"#/$defs/accessTier","default":"public"},"fieldTiers":{"type":"array","items":{"type":"object","required":["path","tier"],"properties":{"path":{"$ref":"#/$defs/jsonPointer"},"tier":{"$ref":"#/$defs/accessTier"}},"additionalProperties":false}}},"additionalProperties":false},"fieldStatusEntry":{"type":"object","required":["path","status"],"description":"B4 (v0.2). Applicability status of one field.","properties":{"path":{"$ref":"#/$defs/jsonPointer"},"status":{"enum":["required","optional","conditional","not-yet-applicable"]},"basis":{"type":"string","description":"Legal or standards basis, e.g. 'Reg (EU) 2023/1542 Art 7 — methodology act not adopted'."},"reviewBy":{"type":"string","format":"date","description":"Date by which the status should be re-assessed."}},"additionalProperties":false},"party":{"type":"object","required":["name"],"properties":{"name":{"type":"string"},"gs1:gln":{"type":"string","pattern":"^[0-9]{13}$"},"otherPartyId":{"type":"object","required":["scheme","value"],"description":"Operator identifier beyond GLN — EN 18219:2026 recognises schemes including the GLEIF LEI; registry access under Implementing Regulation (EU) 2026/1778 ties to verified operator identity.","properties":{"scheme":{"type":"string","examples":["lei","companies-house","duns"]},"value":{"type":"string"}}},"role":{"enum":["producer","collector","sorter","reprocessor","compounder","converter","manufacturer","brand","verifier","importer","authorised-representative","distributor","economic-operator","other"],"description":"'importer', 'authorised-representative', 'distributor' and 'economic-operator' added in v0.2 (B5)."},"address":{"$ref":"#/$defs/postalAddress"},"contactPoint":{"$ref":"#/$defs/contactPoint"}}},"postalAddress":{"type":"object","description":"B5 (v0.2). Postal address of a party (schema.org PostalAddress shape).","properties":{"streetAddress":{"type":"string"},"locality":{"type":"string"},"region":{"type":"string"},"postalCode":{"type":"string"},"countryCode":{"type":"string","pattern":"^[A-Z]{2}$","description":"ISO 3166-1 alpha-2 country code, e.g. 'GB'."}}},"contactPoint":{"type":"object","description":"B5 (v0.2). Electronic contact details of a party.","properties":{"email":{"type":"string","format":"email"},"telephone":{"type":"string"},"url":{"type":"string","format":"uri"}}},"declaredUnit":{"type":"object","required":["quantity","unit"],"description":"B6 (v0.2). Declared or functional unit to which carbonFootprintPerDeclaredUnit and indicators refer, e.g. 1 kWh of total energy over service life (batteries), 1 m of pipe (construction), 1 kg.","properties":{"quantity":{"type":"number","exclusiveMinimum":0},"unit":{"type":"string","examples":["kWh","m","kg","m2","item"]},"description":{"type":"string"}}},"lcaIndicator":{"type":"object","required":["indicator","value","unit"],"description":"B7 (v0.2). One impact-indicator result, optionally for one life-cycle stage or module. Values refer to lcaSummary.declaredUnit when present, otherwise to 1 kg.","properties":{"indicator":{"type":"string","description":"Indicator code. EN 15804+A2 codes RECOMMENDED; PEF impact categories permitted.","examples":["GWP-total","GWP-fossil","GWP-biogenic","GWP-luluc","ODP","AP","EP-freshwater","EP-marine","EP-terrestrial","POCP","ADP-mm","ADP-fossil","WDP"]},"lifecycleStage":{"type":"string","description":"EN 15804 module (A1-A3, A4, A5, B1-B7, C1-C4, D) or battery carbon-footprint stage (raw-material, production, distribution, end-of-life). Absent ⇒ total over assessmentBoundary.","examples":["A1-A3","A4","A5","B1","C1","C2","C3","C4","D","raw-material","production","distribution","end-of-life"]},"value":{"type":"number"},"unit":{"type":"string","examples":["kg CO2e","kg CFC-11e","mol H+e","kg Pe","kg Ne","mol Ne","kg NMVOCe","kg Sbe","MJ","m3 world eq. deprived"]}}},"recycledContentDetail":{"description":"B9 (v0.2). A recycled-content claim scoped to one material, component or layer. Same fields and rules as recycledContentClaim, plus a mandatory scope.","allOf":[{"$ref":"#/$defs/recycledContentClaim"}],"required":["scope"],"properties":{"scope":{"type":"object","minProperties":1,"properties":{"material":{"type":"string","description":"Element symbol (e.g. 'Ni', 'Co', 'Li', 'Pb'), ISO 1043 polymer code, material name or CAS number."},"componentRef":{"type":"string","description":"The component: a JSON Pointer into this passport (e.g. '/composition/substances/0') or the URI of the component's own passport."},"layer":{"type":"string","description":"Layer of a multilayer product, e.g. 'outer', 'core', 'inner'."}}}}},"composition":{"type":"object","required":["materialFamily","substances"],"properties":{"materialFamily":{"enum":["polymer","metal","glass","fibre","mineral","composite","other"]},"substances":{"type":"array","minItems":1,"items":{"type":"object","required":["name","massFraction"],"properties":{"name":{"type":"string"},"casNumber":{"type":"string"},"ecNumber":{"type":"string"},"massFraction":{"type":"number","minimum":0,"maximum":1},"svhcFlag":{"type":"boolean"}}}}},"additionalProperties":true},"recycledContentClaim":{"type":"object","required":["totalRecycledFraction","calculationMethod","evidenceType","verificationStatus"],"properties":{"preConsumerFraction":{"type":"number","minimum":0,"maximum":1},"postConsumerFraction":{"type":"number","minimum":0,"maximum":1},"totalRecycledFraction":{"type":"number","minimum":0,"maximum":1},"calculationMethod":{"enum":["mass-balance","batch-segregation","controlled-blending","declared"]},"chainOfCustodyModel":{"enum":["identity-preserved","segregated","mass-balance","book-and-claim"]},"evidenceType":{"enum":["epcis-event-chain","third-party-certificate","supplier-declaration"]},"evidenceRefs":{"type":"array","items":{"type":"string","format":"uri-reference"}},"verificationStatus":{"enum":["self-declared","evidence-linked","independently-verified"]},"verifierParty":{"$ref":"#/$defs/party"},"feedstockSource":{"enum":["post-consumer-packaging","post-consumer-bottle","post-consumer-textile","post-industrial","post-industrial-textile","mixed","other"],"description":"v0.2, optional, sector-neutral. Origin class of the recycled feedstock. Separates bottle, other packaging and textile feedstock (needed by the textiles profile and bottle-to-fibre claims); 'mixed' where more than one class contributes materially."}},"allOf":[{"if":{"properties":{"verificationStatus":{"const":"independently-verified"}}},"then":{"required":["verifierParty"]}},{"if":{"properties":{"evidenceType":{"const":"epcis-event-chain"}}},"then":{"required":["evidenceRefs"]}}]},"processingHistory":{"type":"object","required":["epcisEvents"],"properties":{"epcisEvents":{"type":"array","items":{"type":"object","required":["eventID","type","bizStep","eventTime"],"properties":{"eventID":{"type":"string"},"type":{"enum":["ObjectEvent","TransformationEvent","AggregationEvent","AssociationEvent"]},"bizStep":{"type":"string"},"eventTime":{"type":"string","format":"date-time"},"ukmp:massBalanceDelta":{"type":"object","required":["inputKg","outputKg"],"properties":{"inputKg":{"type":"number","minimum":0},"outputKg":{"type":"number","minimum":0},"wasteKg":{"type":"number","minimum":0}}},"ukmp:verificationExtension":{"type":"object","properties":{"instrument":{"type":"string"},"measuredPolymerClass":{"type":"string"},"contaminationLevel":{"type":"number","minimum":0,"maximum":1}}}},"additionalProperties":true}},"traversable":{"type":"boolean"}}},"lcaSummary":{"type":"object","required":["assessmentBoundary","methodology"],"anyOf":[{"required":["carbonFootprintKgCo2ePerKg"]},{"required":["carbonFootprintPerDeclaredUnit"]}],"dependentRequired":{"carbonFootprintPerDeclaredUnit":["declaredUnit"]},"properties":{"carbonFootprintKgCo2ePerKg":{"type":"number","minimum":0},"assessmentBoundary":{"enum":["cradle-to-gate","gate-to-gate","cradle-to-grave"]},"methodology":{"type":"string"},"dataQualityRating":{"type":"integer","minimum":1,"maximum":5},"primaryDataFraction":{"type":"number","minimum":0,"maximum":1},"energySource":{"type":"object","properties":{"gridKwh":{"type":"number","minimum":0},"onSiteRenewablesKwh":{"type":"number","minimum":0}}},"virginBaselineKgCo2ePerKg":{"type":"object","required":["value","source"],"properties":{"value":{"type":"number","minimum":0},"unit":{"type":"string"},"source":{"type":"string"},"assessmentBoundary":{"enum":["cradle-to-gate","gate-to-gate","cradle-to-grave"]}}},"netAvoidedKgCo2ePerKg":{"type":"number"},"declaredUnit":{"$ref":"#/$defs/declaredUnit"},"carbonFootprintPerDeclaredUnit":{"type":"number","minimum":0,"description":"B6 (v0.2). Carbon footprint in kg CO2e per declaredUnit. Requires declaredUnit."},"indicators":{"type":"array","items":{"$ref":"#/$defs/lcaIndicator"},"description":"B7 (v0.2). Multi-indicator, per-module results. EN 15804 module D MUST be carried here, never in netAvoidedKgCo2ePerKg."},"studyRefs":{"type":"array","items":{"type":"string","format":"uri-reference"},"description":"B8 (v0.2). LCA / carbon-footprint study, EPD or calculation-parameter documents."},"verifierParty":{"$ref":"#/$defs/party","description":"B8 (v0.2). Independent verifier of the LCA study or EPD."}}},"ukRegulatoryData":{"type":"object","properties":{"ewcCode":{"type":"string","pattern":"^[0-9]{2} [0-9]{2} [0-9]{2}\\*?$"},"endOfWasteStatus":{"type":"object","required":["achieved"],"properties":{"achieved":{"type":"boolean"},"basis":{"enum":["quality-protocol","individual-assessment","not-applicable"]},"atEvent":{"type":"string"}}},"wasteHierarchyPosition":{"enum":["preparation-for-reuse","recycling","recovery"]},"recoveryCode":{"type":"string","pattern":"^R[0-9]{1,2}$"},"pptStatus":{"type":"object","required":["inScope"],"properties":{"inScope":{"type":"boolean"},"recycledFractionForPpt":{"type":"number","minimum":0,"maximum":1},"evidenceRef":{"type":"string"}}},"eprCategory":{"type":"string"},"permits":{"type":"array","items":{"type":"object","required":["type","ref"],"properties":{"type":{"type":"string"},"ref":{"type":"string"}}}},"euMapping":{"type":"object","properties":{"esprCategory":{"type":"string"},"ppwrRecyclabilityGrade":{"type":"string"}}}}}}}</script>
+<script type="application/json" id="inline-examples">{"hdpe":{"@context":["https://www.w3.org/ns/credentials/v2","https://ref.gs1.org/standards/epcis/epcis-context.jsonld","https://schema.materialspassport.org.uk/v0.1/context.jsonld","https://schema.materialspassport.org.uk/v0.1/plastics-context.jsonld"],"id":"https://passports.example-recycler.co.uk/passports/urn:uuid:8f2b7c1e-4d3a-4f6b-9e2d-1a5c7b9d0e42","type":["VerifiableCredential","MaterialPassportCredential"],"issuer":{"id":"https://passports.example-recycler.co.uk/issuer","name":"Example Recycler Ltd","gs1:gln":"5060123456789"},"validFrom":"2026-08-03T14:22:00Z","credentialStatus":{"id":"https://passports.example-recycler.co.uk/status/3#94567","type":"BitstringStatusListEntry","statusPurpose":"revocation","statusListIndex":"94567","statusListCredential":"https://passports.example-recycler.co.uk/status/3"},"credentialSubject":{"type":"ukmp:MaterialPassport","passportId":"https://id.gs1.org/01/05060987654321/10/B26-0803-HD","subjectType":"MaterialBatch","gs1:lgtin":"05060987654321.B26-0803-HD","sectorProfile":"https://schema.materialspassport.org.uk/v0.1/profiles/plastics","conformanceLevel":3,"issuerParty":{"name":"Example Recycler Ltd","gs1:gln":"5060123456789","role":"reprocessor"},"issueDate":"2026-08-03","lastUpdated":"2026-08-03T14:22:00Z","description":"1,000 kg post-consumer recycled HDPE pellet, natural, extrusion grade","composition":{"materialFamily":"polymer","ukmp-plastics:polymerType":"HDPE","ukmp-plastics:form":"pellet","ukmp-plastics:colour":"natural","ukmp-plastics:foodContactGrade":false,"substances":[{"name":"High-density polyethylene","massFraction":0.985},{"name":"Process stabiliser package","massFraction":0.012,"svhcFlag":false},{"name":"Residual contamination (non-target polymer)","massFraction":0.003}]},"recycledContent":{"preConsumerFraction":0.0,"postConsumerFraction":0.87,"totalRecycledFraction":0.87,"calculationMethod":"controlled-blending","chainOfCustodyModel":"segregated","evidenceType":"epcis-event-chain","evidenceRefs":["urn:uuid:e1-intake-2026-07-28","urn:uuid:e4-transform-shred-2026-07-30","urn:uuid:e6-transform-extrude-2026-08-01","urn:uuid:e8-blend-2026-08-02"],"verificationStatus":"evidence-linked"},"processingHistory":{"epcisEvents":[{"eventID":"urn:uuid:e1-intake-2026-07-28","type":"ObjectEvent","bizStep":"receiving","eventTime":"2026-07-28T08:05:00Z","inputNote":"PC HDPE bales, 1,240 kg, supplier GLN 5060555000018"},{"eventID":"urn:uuid:e2-inspect-2026-07-28","type":"ObjectEvent","bizStep":"inspecting","eventTime":"2026-07-28T09:40:00Z","ukmp:verificationExtension":{"instrument":"NIR","measuredPolymerClass":"HDPE","contaminationLevel":0.041}},{"eventID":"urn:uuid:e3-sort-2026-07-29","type":"ObjectEvent","bizStep":"inspecting","eventTime":"2026-07-29T11:00:00Z"},{"eventID":"urn:uuid:e4-transform-shred-2026-07-30","type":"TransformationEvent","bizStep":"transforming","eventTime":"2026-07-30T10:15:00Z","ukmp:massBalanceDelta":{"inputKg":1240,"outputKg":1176,"wasteKg":64}},{"eventID":"urn:uuid:e5-wash-2026-07-31","type":"TransformationEvent","bizStep":"transforming","eventTime":"2026-07-31T09:00:00Z","ukmp:massBalanceDelta":{"inputKg":1176,"outputKg":1128,"wasteKg":48}},{"eventID":"urn:uuid:e6-transform-extrude-2026-08-01","type":"TransformationEvent","bizStep":"transforming","eventTime":"2026-08-01T13:30:00Z","ukmp:massBalanceDelta":{"inputKg":1128,"outputKg":1102,"wasteKg":26}},{"eventID":"urn:uuid:e8-blend-2026-08-02","type":"TransformationEvent","bizStep":"transforming","eventTime":"2026-08-02T10:45:00Z","note":"Blend: 890 kg PCR + 130 kg virgin carrier","ukmp:massBalanceDelta":{"inputKg":1020,"outputKg":1004,"wasteKg":16}},{"eventID":"urn:uuid:e9-pack-2026-08-02","type":"AggregationEvent","bizStep":"packing","eventTime":"2026-08-02T15:20:00Z","note":"40 × 25 kg bags, SSCC 350601234500000021"},{"eventID":"urn:uuid:e10-ship-2026-08-03","type":"ObjectEvent","bizStep":"shipping","eventTime":"2026-08-03T08:10:00Z","destinationGln":"5060777000023"}],"traversable":true},"environmentalFootprint":{"carbonFootprintKgCo2ePerKg":0.42,"assessmentBoundary":"cradle-to-gate","methodology":"ISO 14067","dataQualityRating":3,"primaryDataFraction":0.78,"energySource":{"gridKwh":412,"onSiteRenewablesKwh":96},"virginBaselineKgCo2ePerKg":{"value":2.12,"unit":"kgCO2e/kg","assessmentBoundary":"cradle-to-gate","source":"Illustrative, non-normative: WRAP-derived UK mixed-polymer net-avoided figure (1.7 kg CO2e/kg, per project impact model) plus this batch's own 0.42 footprint"},"netAvoidedKgCo2ePerKg":1.7},"ukRegulatory":{"ewcCode":"19 12 04","endOfWasteStatus":{"achieved":true,"basis":"individual-assessment","atEvent":"urn:uuid:e6-transform-extrude-2026-08-01"},"wasteHierarchyPosition":"recycling","recoveryCode":"R3","pptStatus":{"inScope":true,"recycledFractionForPpt":0.87,"evidenceRef":"urn:uuid:e8-blend-2026-08-02"},"eprCategory":"plastic","permits":[{"type":"environmental-permit","ref":"EPR/AB1234CD"}],"euMapping":{"esprCategory":"polymers-intermediate","ppwrRecyclabilityGrade":"B"}}},"proof":{"type":"DataIntegrityProof","cryptosuite":"ecdsa-jcs-2019","created":"2026-08-03T14:22:04Z","verificationMethod":"https://passports.example-recycler.co.uk/.well-known/ukmp/keys#2026-1","proofPurpose":"assertionMethod","proofValue":"z3FXQjecWufY46...ILLUSTRATIVE-NOT-A-REAL-SIGNATURE...9vKpW2a"}},"l1":{"@context":["https://schema.materialspassport.org.uk/v0.1/context.jsonld"],"type":"ukmp:MaterialPassport","passportId":"https://passports.example-sme.co.uk/passports/urn:uuid:2c9d4a10-77b1-4e5f-8c33-6f0a2d9b1e57","subjectType":"MaterialBatch","alternativeId":{"scheme":"internal-batch-ref","value":"PP-2026-0142"},"conformanceLevel":1,"issuerParty":{"name":"Example SME Reprocessing Ltd","role":"reprocessor"},"issueDate":"2026-08-10","description":"500 kg mixed post-consumer PP regrind, grey, injection-moulding grade (self-declared)","composition":{"materialFamily":"polymer","substances":[{"name":"Polypropylene","massFraction":0.97},{"name":"Residual contamination (non-target polymer)","massFraction":0.03}]},"recycledContent":{"preConsumerFraction":0.05,"postConsumerFraction":0.95,"totalRecycledFraction":1.0,"calculationMethod":"declared","evidenceType":"supplier-declaration","evidenceRefs":["https://passports.example-sme.co.uk/declarations/PP-2026-0142.pdf"],"verificationStatus":"self-declared"}},"battery":{"@context":["https://schema.materialspassport.org.uk/v0.2/context.jsonld"],"type":"ukmp:MaterialPassport","passportId":"https://passports.example-second-life.co.uk/passports/urn:uuid:5b1e9c7a-2f40-4d8e-9a61-0c3d7e2b8f15","subjectType":"Item","identityLevel":"item","gs1:sgtin":"09506000134352.SL-2026-000481","productTypeRef":"https://passports.example-second-life.co.uk/passports/types/SL-ESS-48","aggregation":{"parentRefs":["https://passports.example-second-life.co.uk/passports/systems/BESS-DEMO-0007"],"childRefs":["https://passports.example-second-life.co.uk/passports/modules/SL-2026-000481-M01","https://passports.example-second-life.co.uk/passports/modules/SL-2026-000481-M02","https://passports.example-second-life.co.uk/passports/modules/SL-2026-000481-M03","https://passports.example-second-life.co.uk/passports/modules/SL-2026-000481-M04"]},"lifecycle":{"status":"repurposed","predecessorRefs":["https://passports.example-ev-oem.co.uk/passports/urn:uuid:0d4f2a96-81c3-4b7e-a5d0-6e9b13c47a28"],"statusChangedAt":"2026-10-20T09:30:00Z"},"sectorProfile":"https://schema.materialspassport.org.uk/v0.2/profiles/batteries","conformanceLevel":1,"issuerParty":{"name":"Example Second-Life Storage Ltd","role":"manufacturer","address":{"streetAddress":"1 Example Business Park (illustrative)","locality":"Belfast","postalCode":"BT0 0XX","countryCode":"GB"},"contactPoint":{"email":"passports@example-second-life.co.uk","url":"https://www.example-second-life.co.uk/battery-passport"}},"parties":[{"name":"Example EV Manufacturer GmbH","role":"manufacturer","address":{"streetAddress":"Beispielstraße 1 (illustrative)","locality":"Stuttgart","postalCode":"70000","countryCode":"DE"},"contactPoint":{"email":"battery-passport@example-ev-oem.co.uk"}},{"name":"Example Battery Imports Ltd","role":"importer","address":{"streetAddress":"2 Example Dock Road (illustrative)","locality":"Larne","postalCode":"BT00 0XX","countryCode":"GB"},"contactPoint":{"email":"compliance@example-battery-imports.co.uk","telephone":"+44 28 0000 0000"}}],"issueDate":"2026-10-21","description":"ILLUSTRATIVE EXAMPLE — not real company or product data. Item-level SUCCESSOR passport for an ex-EV lithium-ion pack (NMC 622, ~380 kg) repurposed into a stationary storage unit. The original EV passport is linked by lifecycle.predecessorRefs; under Reg (EU) 2023/1542 Art 77(7) the repurposing operator takes responsibility for this new passport. Battery-specific attributes (state of health, performance, labels, due diligence) are carried by the batteries profile, which imports the Battery Pass data model v1.2 — not reproduced here. The environmentalFootprint block is a voluntary, illustrative estimate per kWh: the regulatory Art 7 declaration is not yet applicable (see fieldStatus). Per-metal recycledContentDetail is likewise voluntary ahead of the Art 8 documentation obligation.","composition":{"materialFamily":"composite","substances":[{"name":"Cathode active material (LiNi0.6Mn0.2Co0.2O2), illustrative","massFraction":0.22},{"name":"Anode active material (graphite), illustrative","massFraction":0.13},{"name":"Electrolyte (LiPF6 in carbonate solvents), illustrative","massFraction":0.08},{"name":"Copper and aluminium current collectors, illustrative","massFraction":0.12},{"name":"Pack housing, busbars, BMS and thermal management, illustrative","massFraction":0.45}]},"recycledContent":{"preConsumerFraction":0.007,"postConsumerFraction":0.003,"totalRecycledFraction":0.01,"calculationMethod":"declared","evidenceType":"supplier-declaration","verificationStatus":"self-declared"},"recycledContentDetail":[{"scope":{"material":"Co","componentRef":"/composition/substances/0"},"preConsumerFraction":0.08,"postConsumerFraction":0.04,"totalRecycledFraction":0.12,"calculationMethod":"declared","evidenceType":"supplier-declaration","evidenceRefs":["https://passports.example-ev-oem.co.uk/declarations/cathode-recycled-content-ILLUSTRATIVE.pdf"],"verificationStatus":"self-declared"},{"scope":{"material":"Ni","componentRef":"/composition/substances/0"},"preConsumerFraction":0.04,"postConsumerFraction":0.0,"totalRecycledFraction":0.04,"calculationMethod":"declared","evidenceType":"supplier-declaration","verificationStatus":"self-declared"},{"scope":{"material":"Li","componentRef":"/composition/substances/0"},"preConsumerFraction":0.0,"postConsumerFraction":0.0,"totalRecycledFraction":0.0,"calculationMethod":"declared","evidenceType":"supplier-declaration","verificationStatus":"self-declared"}],"environmentalFootprint":{"declaredUnit":{"quantity":1,"unit":"kWh","description":"1 kWh of total energy delivered over the expected second-life service (illustrative)"},"carbonFootprintPerDeclaredUnit":9.5,"assessmentBoundary":"cradle-to-grave","methodology":"VOLUNTARY and ILLUSTRATIVE — ISO 14067-based estimate allocating the original cell footprint over first- and second-life energy throughput. NOT a Reg (EU) 2023/1542 Art 7 carbon footprint declaration.","indicators":[{"indicator":"GWP-total","lifecycleStage":"raw-material","value":6.1,"unit":"kg CO2e"},{"indicator":"GWP-total","lifecycleStage":"production","value":2.4,"unit":"kg CO2e"},{"indicator":"GWP-total","lifecycleStage":"distribution","value":0.3,"unit":"kg CO2e"},{"indicator":"GWP-total","lifecycleStage":"end-of-life","value":0.7,"unit":"kg CO2e"}],"studyRefs":["https://www.example-second-life.co.uk/studies/SL-ESS-48-footprint-ILLUSTRATIVE.pdf"]},"ukRegulatory":{"permits":[{"type":"environmental-permit","ref":"EPR/XX0000XX (illustrative)"}]},"accessPolicy":{"defaultTier":"public","fieldTiers":[{"path":"/composition/substances","tier":"legitimate-interest"},{"path":"/aggregation/childRefs","tier":"legitimate-interest"},{"path":"/ukRegulatory/permits","tier":"authority"}]},"fieldStatus":[{"path":"/environmentalFootprint","status":"not-yet-applicable","basis":"Reg (EU) 2023/1542 Art 7 — carbon footprint declaration not yet applicable: calculation/verification methodology delegated act not adopted at issue date","reviewBy":"2027-02-18"},{"path":"/recycledContentDetail","status":"not-yet-applicable","basis":"Reg (EU) 2023/1542 Art 8 — documentation of recycled cobalt, lead, lithium and nickel shares applies from 18 Aug 2028 at the earliest, subject to the methodology delegated act; values here are voluntary supplier declarations","reviewBy":"2028-08-18"},{"path":"/recycledContent","status":"conditional","basis":"Core field required by this schema; aggregate populated as a self-declared figure until Art 8 documentation applies"},{"path":"/composition/substances","status":"required","basis":"Reg (EU) 2023/1542 Annex XIII pt 2 — detailed composition, legitimate-interest access"}]},"pipeType":{"@context":["https://schema.materialspassport.org.uk/v0.2/context.jsonld","https://schema.materialspassport.org.uk/v0.1/plastics-context.jsonld"],"type":"ukmp:MaterialPassport","passportId":"https://passports.example-pipes.co.uk/passports/types/RDP-110-SN4","subjectType":"ProductType","identityLevel":"productType","gs1:gtin":"09506000134376","sectorProfile":"https://schema.materialspassport.org.uk/v0.2/profiles/construction","conformanceLevel":1,"issuerParty":{"name":"Example Pipe Systems Ltd","role":"manufacturer","address":{"streetAddress":"3 Example Industrial Estate (illustrative)","locality":"Larne","postalCode":"BT00 0XX","countryCode":"GB"},"contactPoint":{"email":"dpp@example-pipes.co.uk","url":"https://www.example-pipes.co.uk/products/RDP-110-SN4"}},"parties":[{"name":"Example EU Representative B.V.","role":"authorised-representative","address":{"streetAddress":"Voorbeeldstraat 1 (illustrative)","locality":"Rotterdam","postalCode":"3000 AA","countryCode":"NL"},"contactPoint":{"email":"ar@example-eu-rep.co.uk"}}],"issueDate":"2026-10-28","description":"ILLUSTRATIVE EXAMPLE — not real company or product data. Product-type passport for a recycled-HDPE non-pressure underground drainage pipe, 110 mm OD, ring stiffness class SN4 (illustrative). One passport per product type, as the construction DPP under Reg (EU) 2024/3110 is product-type level; batch passports reference it via productTypeRef (see example_pipe_batch_v02.jsonld). Declared performance characteristics (DoPC) belong to the construction profile overlay, which references EN ISO 23387 data templates rather than redefining them; they are not reproduced in the core passport. The pipe is three-layer (virgin outer and inner skins, recycled core); recycledContentDetail scopes the claim per layer and the aggregate recycledContent is the mass-weighted total. Module D is carried as an indicator, never as netAvoidedKgCo2ePerKg. Recycled-content figures are the declared minimum for the type, not a batch measurement.","composition":{"materialFamily":"polymer","ukmp-plastics:polymerType":"HDPE","ukmp-plastics:colour":"black","substances":[{"name":"High-density polyethylene (recycled)","massFraction":0.8},{"name":"High-density polyethylene (virgin)","massFraction":0.175},{"name":"Carbon black masterbatch","massFraction":0.025,"svhcFlag":false}]},"recycledContent":{"preConsumerFraction":0.2,"postConsumerFraction":0.6,"totalRecycledFraction":0.8,"calculationMethod":"batch-segregation","chainOfCustodyModel":"segregated","feedstockSource":"mixed","evidenceType":"third-party-certificate","evidenceRefs":["https://certs.example-certifier.co.uk/certificates/EX-RC-0000-ILLUSTRATIVE"],"verificationStatus":"independently-verified","verifierParty":{"name":"Example Certification Body Ltd","role":"verifier"}},"recycledContentDetail":[{"scope":{"layer":"outer","material":"PE-HD"},"totalRecycledFraction":0.0,"calculationMethod":"declared","evidenceType":"supplier-declaration","verificationStatus":"self-declared"},{"scope":{"layer":"core","material":"PE-HD"},"preConsumerFraction":0.25,"postConsumerFraction":0.75,"totalRecycledFraction":1.0,"calculationMethod":"batch-segregation","chainOfCustodyModel":"segregated","feedstockSource":"mixed","evidenceType":"third-party-certificate","evidenceRefs":["https://certs.example-certifier.co.uk/certificates/EX-RC-0000-ILLUSTRATIVE"],"verificationStatus":"independently-verified","verifierParty":{"name":"Example Certification Body Ltd","role":"verifier"}},{"scope":{"layer":"inner","material":"PE-HD"},"totalRecycledFraction":0.0,"calculationMethod":"declared","evidenceType":"supplier-declaration","verificationStatus":"self-declared"}],"environmentalFootprint":{"carbonFootprintKgCo2ePerKg":0.65,"assessmentBoundary":"cradle-to-gate","methodology":"EN 15804+A2 (illustrative values; carbonFootprintKgCo2ePerKg covers modules A1–A3 per kg, indicators are per declared unit)","dataQualityRating":3,"primaryDataFraction":0.6,"declaredUnit":{"quantity":1,"unit":"m","description":"1 m of 110 mm SN4 pipe, approx. 1.3 kg/m (illustrative)"},"carbonFootprintPerDeclaredUnit":0.85,"indicators":[{"indicator":"GWP-total","lifecycleStage":"A1-A3","value":0.85,"unit":"kg CO2e"},{"indicator":"GWP-fossil","lifecycleStage":"A1-A3","value":0.84,"unit":"kg CO2e"},{"indicator":"GWP-biogenic","lifecycleStage":"A1-A3","value":0.005,"unit":"kg CO2e"},{"indicator":"GWP-luluc","lifecycleStage":"A1-A3","value":0.001,"unit":"kg CO2e"},{"indicator":"GWP-total","lifecycleStage":"C1","value":0.0,"unit":"kg CO2e"},{"indicator":"GWP-total","lifecycleStage":"C2","value":0.01,"unit":"kg CO2e"},{"indicator":"GWP-total","lifecycleStage":"C3","value":0.06,"unit":"kg CO2e"},{"indicator":"GWP-total","lifecycleStage":"C4","value":0.002,"unit":"kg CO2e"},{"indicator":"GWP-total","lifecycleStage":"D","value":-0.55,"unit":"kg CO2e"},{"indicator":"ADP-fossil","lifecycleStage":"A1-A3","value":21.0,"unit":"MJ"}],"studyRefs":["https://epd.example-programme-operator.co.uk/epd/EX-EPD-0000-ILLUSTRATIVE"],"verifierParty":{"name":"Example EPD Verifier Ltd","role":"verifier"}},"accessPolicy":{"defaultTier":"public"},"fieldStatus":[{"path":"/environmentalFootprint","status":"conditional","basis":"Reg (EU) 2024/3110 (CPR) — environmental indicators become mandatory declared characteristics only once the harmonised technical specification for the product family requires them; declared voluntarily here","reviewBy":"2027-12-31"},{"path":"/recycledContent/feedstockSource","status":"optional","basis":"UKMP v0.2 core — optional, sector-neutral feedstock origin class"}]},"pipeBatch":{"@context":["https://schema.materialspassport.org.uk/v0.2/context.jsonld"],"type":"ukmp:MaterialPassport","passportId":"https://id.gs1.org/01/09506000134376/10/RDP-26-1104","subjectType":"Product","identityLevel":"batch","gs1:lgtin":"09506000134376.RDP-26-1104","productTypeRef":"https://passports.example-pipes.co.uk/passports/types/RDP-110-SN4","sectorProfile":"https://schema.materialspassport.org.uk/v0.2/profiles/construction","conformanceLevel":1,"issuerParty":{"name":"Example Pipe Systems Ltd","role":"manufacturer"},"issueDate":"2026-11-04","description":"ILLUSTRATIVE EXAMPLE — not real company or product data. Batch passport for one production lot of the pipe type in example_pipe_producttype_v02.jsonld, showing optional productTypeRef usage: type-level data (declared performance, type GTIN) is inherited by reference; batch-level data (this lot's composition and recycled-content claim) is carried here.","composition":{"materialFamily":"polymer","substances":[{"name":"High-density polyethylene (recycled)","massFraction":0.82},{"name":"High-density polyethylene (virgin)","massFraction":0.155},{"name":"Carbon black masterbatch","massFraction":0.025}]},"recycledContent":{"preConsumerFraction":0.22,"postConsumerFraction":0.6,"totalRecycledFraction":0.82,"calculationMethod":"batch-segregation","chainOfCustodyModel":"segregated","feedstockSource":"mixed","evidenceType":"supplier-declaration","evidenceRefs":["https://passports.example-pipes.co.uk/declarations/RDP-26-1104.pdf"],"verificationStatus":"self-declared"}}}</script>
+
 <script>
+'use strict';
+const SCHEMA_PATH='schema/material_passport.schema.json';
+const EXAMPLE_FILES={
+  hdpe:'examples/example_passport.jsonld',
+  l1:'examples/example_level1_minimal.jsonld',
+  battery:'examples/example_battery_item_v02.jsonld',
+  pipeType:'examples/example_pipe_producttype_v02.jsonld',
+  pipeBatch:'examples/example_pipe_batch_v02.jsonld'
+};
+const TOLERANCE_FRACTION=1e-6; // recycled-content fraction arithmetic (validate.py)
+const TOLERANCE_KG=0.5;        // mass-balance reconciliation, weighbridge rounding (validate.py)
+const LEVEL_NAMES={1:'Core',2:'Evidence-linked',3:'Verified'};
+
 function mode(m){
   document.getElementById('paneB').classList.toggle('hide', m!=='b');
   document.getElementById('paneV').classList.toggle('hide', m!=='v');
   document.getElementById('tabB').classList.toggle('on', m==='b');
   document.getElementById('tabV').classList.toggle('on', m==='v');
 }
-const V = id => parseFloat(document.getElementById(id).value)||0;
-const TOL = 0.005; // 0.5% tolerance, matches validate.py
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const isNum=v=>typeof v==='number'&&isFinite(v);
+const isObj=v=>v!==null&&typeof v==='object'&&!Array.isArray(v);
+const py=v=>typeof v==='string'?"'"+v+"'":JSON.stringify(v);
+// Python repr of a float sum: a whole-number result of non-integer operands prints as e.g. 1.0
+const pySum=(a,b)=>{const s=+(a+b).toFixed(10);return (Number.isInteger(s)&&!(Number.isInteger(a)&&Number.isInteger(b)))?s.toFixed(1):String(s);};
 
+// ---------- data sources: live repo files when reachable, inline copies otherwise ----------
+const DATA={schema:null, examples:{}, source:{}};
+async function fetchJson(rel){
+  const r=await fetch('../'+rel,{cache:'no-cache'});
+  if(!r.ok) throw new Error(r.status);
+  return JSON.parse(await r.text());
+}
+async function loadData(){
+  const inlineSchema=JSON.parse(document.getElementById('inline-schema').textContent);
+  const inlineEx=JSON.parse(document.getElementById('inline-examples').textContent);
+  // Only a checkout served from the repository root has ../schema and ../examples next to /docs/;
+  // GitHub Pages (serving /docs as the site root) and file:// use the embedded copies, with no 404 probes.
+  const live=location.protocol.startsWith('http')&&/\/docs\/(index\.html)?$/.test(location.pathname);
+  async function pick(rel,fallback){
+    if(live){try{const v=await fetchJson(rel);return [v,'repository'];}catch(e){/* not served alongside: use inline copy */}}
+    return [fallback,'inline'];
+  }
+  const [s,ss]=await pick(SCHEMA_PATH,inlineSchema);
+  DATA.schema=s; DATA.source.schema=ss;
+  for(const [k,rel] of Object.entries(EXAMPLE_FILES)){
+    const [v,src]=await pick(rel,inlineEx[k]); DATA.examples[k]=v; DATA.source[k]=src;
+  }
+  const srcs=new Set(Object.values(DATA.source));
+  document.getElementById('srcNote').innerHTML='Schema <code>'+esc(DATA.schema.$id||'')+'</code> · '+
+    (srcs.size===1&&srcs.has('repository')?'schema and examples loaded live from the repository files':
+     srcs.size===1?'using the copies of the schema and examples embedded in this page':'mixed: some files live, some embedded copies')+
+    '. Accepts bare passports, VC-enveloped passports and compact JWS (JOSE) credentials.';
+}
+
+// ---------- minimal JSON Schema 2020-12 validator (keywords used by the ukmp schema) ----------
+const RE_DATE=/^\d{4}-\d{2}-\d{2}$/;
+const RE_DATETIME=/^(\d{4})-(\d{2})-(\d{2})[Tt](\d{2}):(\d{2}):(\d{2})(\.\d+)?([Zz]|[+-]\d{2}:\d{2})$/;
+function validCalendar(y,m,d){
+  if(m<1||m>12||d<1) return false;
+  const dim=[31,(y%4===0&&(y%100!==0||y%400===0))?29:28,31,30,31,30,31,31,30,31,30,31][m-1];
+  return d<=dim;
+}
+const FORMATS={ // the formats python-jsonschema's FormatChecker asserts (uri/uri-reference are not asserted there either)
+  'date':s=>RE_DATE.test(s)&&validCalendar(+s.slice(0,4),+s.slice(5,7),+s.slice(8,10)),
+  'date-time':s=>{const m=RE_DATETIME.exec(s);if(!m)return false;
+    if(!validCalendar(+m[1],+m[2],+m[3]))return false;
+    if(+m[4]>23||+m[5]>59||+m[6]>60)return false;
+    if(m[8].length===6){const hh=+m[8].slice(1,3),mm=+m[8].slice(4,6);if(hh>23||mm>59)return false;}
+    return true;},
+  'email':s=>s.includes('@')
+};
+function canon(v){if(Array.isArray(v))return v.map(canon);if(isObj(v)){const o={};Object.keys(v).sort().forEach(k=>o[k]=canon(v[k]));return o;}return v;}
+const deepEq=(a,b)=>JSON.stringify(canon(a))===JSON.stringify(canon(b));
+function typeOk(v,t){
+  switch(t){
+    case 'object':return isObj(v); case 'array':return Array.isArray(v);
+    case 'string':return typeof v==='string'; case 'number':return isNum(v);
+    case 'integer':return isNum(v)&&Number.isInteger(v); case 'boolean':return typeof v==='boolean';
+    case 'null':return v===null;
+  } return true;
+}
+function resolveRef(root,ref){
+  if(!ref.startsWith('#')) throw new Error('external $ref not supported: '+ref);
+  let node=root;
+  for(const raw of ref.slice(1).split('/').slice(1)){node=node[decodeURIComponent(raw).replace(/~1/g,'/').replace(/~0/g,'~')];if(node===undefined)throw new Error('unresolved $ref '+ref);}
+  return node;
+}
+const show=v=>{const s=JSON.stringify(v);return s.length>60?s.slice(0,57)+'…':s;};
+function sv(schema,inst,path,root,errs){
+  if(schema===true) return; if(schema===false){errs.push([path,'False schema does not allow '+show(inst)]);return;}
+  if(schema.$ref) sv(resolveRef(root,schema.$ref),inst,path,root,errs);
+  if('type' in schema){const ts=[].concat(schema.type);if(!ts.some(t=>typeOk(inst,t))){errs.push([path,show(inst)+' is not of type '+ts.map(t=>"'"+t+"'").join(', ')]);}}
+  if('const' in schema&&!deepEq(inst,schema.const)) errs.push([path,py(schema.const)+' was expected']);
+  if(schema.enum&&!schema.enum.some(e=>deepEq(e,inst))) errs.push([path,show(inst)+' is not one of '+JSON.stringify(schema.enum)]);
+  if(typeof inst==='string'){
+    if(schema.pattern&&!new RegExp(schema.pattern,'u').test(inst)) errs.push([path,show(inst)+' does not match '+py(schema.pattern)]);
+    if(schema.format&&FORMATS[schema.format]&&!FORMATS[schema.format](inst)) errs.push([path,show(inst)+" is not a '"+schema.format+"'"]);
+  }
+  if(isNum(inst)){
+    if('minimum' in schema&&inst<schema.minimum) errs.push([path,inst+' is less than the minimum of '+schema.minimum]);
+    if('maximum' in schema&&inst>schema.maximum) errs.push([path,inst+' is greater than the maximum of '+schema.maximum]);
+    if('exclusiveMinimum' in schema&&inst<=schema.exclusiveMinimum) errs.push([path,inst+' is less than or equal to the minimum of '+schema.exclusiveMinimum]);
+  }
+  if(Array.isArray(inst)){
+    if('minItems' in schema&&inst.length<schema.minItems) errs.push([path,show(inst)+(schema.minItems===1?' should be non-empty':' is too short')]);
+    if(schema.uniqueItems){for(let i=0;i<inst.length;i++)for(let j=i+1;j<inst.length;j++)if(deepEq(inst[i],inst[j])){errs.push([path,show(inst)+' has non-unique elements']);i=inst.length;break;}}
+    if(schema.items!==undefined) inst.forEach((it,i)=>sv(schema.items,it,path.concat(i),root,errs));
+  }
+  if(isObj(inst)){
+    (schema.required||[]).forEach(k=>{if(!(k in inst)) errs.push([path,py(k)+' is a required property']);});
+    if('minProperties' in schema&&Object.keys(inst).length<schema.minProperties) errs.push([path,show(inst)+' should be non-empty']);
+    if(schema.dependentRequired) for(const [k,deps] of Object.entries(schema.dependentRequired)) if(k in inst) deps.forEach(d=>{if(!(d in inst)) errs.push([path,py(d)+' is a dependency of '+py(k)]);});
+    const props=schema.properties||{};
+    for(const [k,s] of Object.entries(props)) if(k in inst) sv(s,inst[k],path.concat(k),root,errs);
+    if(schema.additionalProperties!==undefined&&schema.additionalProperties!==true){
+      const extra=Object.keys(inst).filter(k=>!(k in props));
+      if(schema.additionalProperties===false){if(extra.length) errs.push([path,'Additional properties are not allowed ('+extra.map(py).join(', ')+(extra.length>1?' were':' was')+' unexpected)']);}
+      else extra.forEach(k=>sv(schema.additionalProperties,inst[k],path.concat(k),root,errs));
+    }
+  }
+  if(schema.allOf) schema.allOf.forEach(s=>sv(s,inst,path,root,errs));
+  if(schema.anyOf){
+    const ok=schema.anyOf.some(s=>{const e=[];sv(s,inst,path,root,e);return e.length===0;});
+    if(!ok){
+      const reqOnly=schema.anyOf.every(s=>s.required&&Object.keys(s).length===1);
+      if(reqOnly&&path.length===0) errs.push([path,'no identifier — one of '+schema.anyOf.map(s=>s.required.join(', ')).join(' | ')+' is required']);
+      else if(reqOnly) errs.push([path,'one of '+schema.anyOf.map(s=>s.required.join(', ')).join(' | ')+' is required']);
+      else errs.push([path,show(inst)+' is not valid under any of the given schemas']);
+    }
+  }
+  if(schema.if!==undefined){
+    const e=[];sv(schema.if,inst,path,root,e);
+    if(e.length===0&&schema.then!==undefined) sv(schema.then,inst,path,root,errs);
+    else if(e.length&&schema.else!==undefined) sv(schema.else,inst,path,root,errs);
+  }
+}
+function checkSchema(passport){
+  const errs=[];sv(DATA.schema,passport,[],DATA.schema,errs);
+  return errs.map(([p,m])=>'schema: '+(p.join('/')||'(root)')+': '+m);
+}
+
+// ---------- semantic checks: ports of tools/validate.py ----------
+function claimArithmetic(claim,label){
+  const pre=claim.preConsumerFraction, post=claim.postConsumerFraction, total=claim.totalRecycledFraction;
+  if(isNum(total)&&isNum(pre)&&isNum(post)&&Math.abs((pre+post)-total)>TOLERANCE_FRACTION)
+    return ['recycled-content: '+label+'totalRecycledFraction ('+total+') != preConsumerFraction + postConsumerFraction ('+pre+' + '+post+' = '+pySum(pre,post)+')'];
+  return [];
+}
+function countClaims(p){return (isObj(p.recycledContent)?1:0)+(Array.isArray(p.recycledContentDetail)?p.recycledContentDetail.filter(isObj).length:0);}
+function checkRecycledContent(p){
+  let e=[];
+  if(isObj(p.recycledContent)) e=e.concat(claimArithmetic(p.recycledContent,''));
+  if(Array.isArray(p.recycledContentDetail)) p.recycledContentDetail.forEach((d,i)=>{if(isObj(d)) e=e.concat(claimArithmetic(d,'recycledContentDetail['+i+']: '));});
+  return e;
+}
+function massBalanceEvents(p){
+  const h=p.processingHistory; if(!isObj(h)||!Array.isArray(h.epcisEvents)) return [];
+  return h.epcisEvents.filter(ev=>isObj(ev)&&isObj(ev['ukmp:massBalanceDelta']));
+}
+function checkMassBalance(p){
+  const e=[];
+  massBalanceEvents(p).forEach(ev=>{
+    const d=ev['ukmp:massBalanceDelta'], id=ev.eventID||'(no eventID)';
+    const i=d.inputKg,o=d.outputKg,w=('wasteKg' in d)?d.wasteKg:0;
+    if(isNum(i)&&isNum(o)&&isNum(w)&&Math.abs(i-(o+w))>TOLERANCE_KG)
+      e.push('mass-balance: event '+id+': inputKg ('+i+') != outputKg + wasteKg ('+o+' + '+w+' = '+pySum(o,w)+')');
+  });
+  return e;
+}
+function checkEvidenceChain(p){
+  const w=[], c=p.recycledContent;
+  if(!isObj(c)||c.evidenceType!=='epcis-event-chain') return w;
+  const h=p.processingHistory, evs=isObj(h)&&Array.isArray(h.epcisEvents)?h.epcisEvents:[];
+  const ids=new Set(evs.filter(isObj).map(e=>e.eventID));
+  if(ids.size===0){w.push("evidence: evidenceType is 'epcis-event-chain' but processingHistory carries no events — chain not traversable from this document alone");return w;}
+  (c.evidenceRefs||[]).forEach(r=>{if(!ids.has(r)) w.push('evidence: evidenceRef '+r+' not found in processingHistory.epcisEvents');});
+  return w;
+}
+function isValidPointer(ptr){return typeof ptr==='string'&&(ptr===''||(ptr.startsWith('/')&&!/~(?![01])/.test(ptr)));}
+function resolvePointer(doc,ptr){
+  if(ptr==='') return true;
+  let node=doc;
+  for(const raw of ptr.slice(1).split('/')){
+    const t=raw.replace(/~1/g,'/').replace(/~0/g,'~');
+    if(isObj(node)){if(!Object.prototype.hasOwnProperty.call(node,t))return false;node=node[t];}
+    else if(Array.isArray(node)){if(!/^(0|[1-9][0-9]*)$/.test(t))return false;const i=+t;if(i>=node.length)return false;node=node[i];}
+    else return false;
+  }
+  return true;
+}
+const ALWAYS_PUBLIC=['/type','/passportId','/subjectType','/identityLevel','/gs1:gtin','/gs1:lgtin','/gs1:sgtin','/alternativeId','/issuerParty','/issueDate','/conformanceLevel','/lifecycle/status','/accessPolicy','/fieldStatus'];
+const covers=(pre,ptr)=>pre===''||ptr===pre||ptr.startsWith(pre+'/');
+function effectiveTier(policy,ptr){
+  let best=-1, tier=('defaultTier' in policy)?policy.defaultTier:'public';
+  (policy.fieldTiers||[]).forEach(e=>{if(!isObj(e))return;const p=e.path;if(isValidPointer(p)&&covers(p,ptr)&&p.length>best){best=p.length;tier=('tier' in e)?e.tier:tier;}});
+  return tier;
+}
+function checkFieldPointers(p){
+  const w=[], pol=p.accessPolicy;
+  if(isObj(pol)){
+    const seen={};
+    (pol.fieldTiers||[]).forEach((e,i)=>{
+      if(!isObj(e))return; const path=e.path, tier=e.tier, where='accessPolicy.fieldTiers['+i+']';
+      if(!isValidPointer(path)){w.push('pointer: '+where+'.path '+py(path)+' is not a valid RFC 6901 JSON Pointer');return;}
+      if(!resolvePointer(p,path)) w.push('pointer: '+where+'.path '+path+" does not resolve in this passport (tier '"+tier+"' applies to nothing)");
+      if(path in seen&&seen[path]!==tier) w.push('pointer: '+where+'.path '+path+" assigned conflicting tiers '"+seen[path]+"' and '"+tier+"'");
+      if(!(path in seen)) seen[path]=tier;
+    });
+    ALWAYS_PUBLIC.forEach(ptr=>{if(resolvePointer(p,ptr)){const t=effectiveTier(pol,ptr);if(t!=='public')w.push('access: '+ptr+" resolves to tier '"+t+"' but MUST remain public (spec §4.8)");}});
+  }
+  if(Array.isArray(p.fieldStatus)) p.fieldStatus.forEach((e,i)=>{
+    if(!isObj(e))return; const where='fieldStatus['+i+']';
+    if(!isValidPointer(e.path)){w.push('pointer: '+where+'.path '+py(e.path)+' is not a valid RFC 6901 JSON Pointer');return;}
+    if(!resolvePointer(p,e.path)&&e.status==='required') w.push('pointer: '+where+'.path '+e.path+" is marked 'required' but is absent");
+  });
+  return w;
+}
+function checkLifecycle(p){
+  const w=[], lc=p.lifecycle; if(!isObj(lc)) return w;
+  const status=('status' in lc)?lc.status:'original', preds=lc.predecessorRefs||[], succs=lc.successorRefs||[];
+  if(status!=='original'&&!preds.length) w.push("lifecycle: status '"+status+"' but no predecessorRefs — a successor passport should link to the passport(s) it succeeds");
+  if(status==='original'&&preds.length) w.push("lifecycle: status 'original' but predecessorRefs present — an original passport has no predecessor (corrections are revisions, not successors)");
+  if(p.passportId&&(preds.includes(p.passportId)||succs.includes(p.passportId))) w.push('lifecycle: passport lists its own passportId as predecessor/successor (use a revision, not a successor, for the same subject)');
+  return w;
+}
+const SUBJECT_TYPE_LEVEL={MaterialBatch:'batch',ProductType:'productType',Item:'item'};
+function effectiveIdentityLevel(p){
+  if(p.identityLevel) return [p.identityLevel,'declared'];
+  const inf=SUBJECT_TYPE_LEVEL[p.subjectType]; return inf?[inf,'from subjectType']:[null,null];
+}
+function checkIdentity(p){
+  const w=[], [level]=effectiveIdentityLevel(p), declared=p.identityLevel, implied=SUBJECT_TYPE_LEVEL[p.subjectType];
+  if(declared&&implied&&declared!==implied) w.push("identity: identityLevel '"+declared+"' contradicts subjectType '"+p.subjectType+"' (implies '"+implied+"')");
+  if(level==='item'&&!('gs1:sgtin' in p)&&!('alternativeId' in p)) w.push('identity: item-level passport without gs1:sgtin or alternativeId — a serialised item identifier is expected');
+  return w;
+}
+function detectLevel(p,enveloped,doc,jose){
+  let level=1;
+  const h=p.processingHistory, hasEvents=isObj(h)&&Array.isArray(h.epcisEvents)&&h.epcisEvents.length>0;
+  const st=isObj(p.recycledContent)?p.recycledContent.verificationStatus:null;
+  if(hasEvents&&(st==='evidence-linked'||st==='independently-verified')) level=2;
+  const secured=jose||(enveloped&&isObj(doc.proof));
+  if(enveloped&&secured&&level>=2) level=3;
+  return level;
+}
+function decodeJws(text){
+  const parts=text.trim().split('.');
+  if(parts.length!==3||!parts[0]||!parts[1]) return null;
+  const b64=s=>{s=s.replace(/-/g,'+').replace(/_/g,'/');s+='='.repeat((4-s.length%4)%4);
+    const bin=atob(s);return JSON.parse(new TextDecoder().decode(Uint8Array.from(bin,c=>c.charCodeAt(0))));};
+  try{const h=b64(parts[0]),pl=b64(parts[1]);return isObj(h)&&isObj(pl)?[h,pl]:null;}catch(e){return null;}
+}
+function isVcEnvelope(doc){
+  const t=[].concat(doc.type===undefined?[]:doc.type);
+  return 'credentialSubject' in doc&&(t.includes('VerifiableCredential')||t.includes('MaterialPassportCredential'));
+}
+
+/** Full validation, mirroring tools/validate.py validate_file(). Text may be JSON or a compact JWS. */
+function validateText(text){
+  let doc, jose=false;
+  try{doc=JSON.parse(text);}
+  catch(e){const d=decodeJws(text);if(!d)return {parseError:'neither JSON nor a compact JWS ('+e.message+')'};doc=d[1];jose=true;}
+  if(!isObj(doc)) return {parseError:'top-level JSON value must be an object'};
+  let passport=doc, enveloped=false;
+  if(isVcEnvelope(doc)){enveloped=true;passport=doc.credentialSubject;if(Array.isArray(passport))passport=passport[0]||{};}
+  if(!isObj(passport)) passport={};
+  const schemaErrors=checkSchema(passport), rcErrors=checkRecycledContent(passport), mbErrors=checkMassBalance(passport);
+  const errors=[...schemaErrors,...rcErrors,...mbErrors];
+  const warnings=[...checkEvidenceChain(passport),...checkIdentity(passport),...checkLifecycle(passport),...checkFieldPointers(passport)];
+  // recycledContentDetail scope.componentRef (B9)
+  if(Array.isArray(passport.recycledContentDetail)) passport.recycledContentDetail.forEach((d,i)=>{
+    const ref=isObj(d)&&isObj(d.scope)?d.scope.componentRef:null;
+    if(typeof ref==='string'&&ref.startsWith('/')){
+      if(!isValidPointer(ref)) warnings.push('pointer: recycledContentDetail['+i+'].scope.componentRef '+py(ref)+' is not a valid RFC 6901 JSON Pointer');
+      else if(!resolvePointer(passport,ref)) warnings.push('pointer: recycledContentDetail['+i+'].scope.componentRef '+ref+' does not resolve in this passport');
+    }
+  });
+  const envelope=jose?'JOSE-enveloped (JWS)':enveloped?'VC-enveloped':'bare passport';
+  const [idLevel,idSource]=effectiveIdentityLevel(passport);
+  const lc=isObj(passport.lifecycle)?passport.lifecycle:null;
+  const res={pass:errors.length===0,errors,schemaErrors,rcErrors,mbErrors,warnings,envelope,
+    identityLevel:idLevel,identitySource:idSource,
+    lifecycleStatus:lc?(('status' in lc)?lc.status:'original'):null,
+    claims:countClaims(passport),mbEvents:massBalanceEvents(passport).length,level:null,passport,doc};
+  if(res.pass){
+    res.level=detectLevel(passport,enveloped,doc,jose);
+    const declared=passport.conformanceLevel;
+    if(declared!==undefined&&declared!==res.level) warnings.push('conformance: declared conformanceLevel '+declared+' != detected '+res.level);
+    if(jose) warnings.push('jose: JWS signature present but NOT cryptographically verified by this tool (Level 3 signature verification is a WP2 reference-implementation capability)');
+    if(enveloped&&isObj(doc.proof)) warnings.push('proof: signature present but NOT cryptographically verified by this tool (Level 3 proof verification is a WP2 reference-implementation capability)');
+  }
+  return res;
+}
+
+// ---------- rendering ----------
+function check(name,state,detail,list){return {name,state,detail,list};}
+function renderChecks(el,checks){
+  const ic={p:'✓',f:'✗',w:'!',i:'i'};
+  el.innerHTML=checks.map(c=>'<div class="check" data-state="'+c.state+'"><span class="ic '+c.state+'">'+ic[c.state]+'</span><span><b>'+esc(c.name)+'</b>'+(c.detail?' — '+esc(c.detail):'')+
+    (c.list&&c.list.length?'<ul>'+c.list.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>':'')+'</span></div>').join('');
+}
+function reportChecks(r){
+  const c=[];
+  c.push(check('Parsed',  'p', r.envelope));
+  c.push(r.schemaErrors.length?check('JSON Schema v0.2','f',r.schemaErrors.length+' error(s)',r.schemaErrors.map(s=>s.replace(/^schema: /,''))):check('JSON Schema v0.2','p','valid against '+(DATA.schema.$id||'the schema').replace(/^https:\/\//,'')));
+  c.push(r.rcErrors.length?check('Recycled-content arithmetic','f','total ≠ pre + post',r.rcErrors.map(s=>s.replace(/^recycled-content: /,''))):
+    check('Recycled-content arithmetic','p',r.claims?r.claims+' claim(s) checked (recycledContent'+(r.claims>1?' + recycledContentDetail':'')+'): total = pre + post where stated':'no claim to check'));
+  c.push(r.mbErrors.length?check('Mass-balance reconciliation','f','input ≠ output + waste (±'+TOLERANCE_KG+' kg)',r.mbErrors.map(s=>s.replace(/^mass-balance: /,''))):
+    check('Mass-balance reconciliation',r.mbEvents?'p':'i',r.mbEvents?r.mbEvents+' event(s) with ukmp:massBalanceDelta, all reconcile (in = out + waste)':'no ukmp:massBalanceDelta events (acceptable at Level 1)'));
+  const groups={};
+  r.warnings.forEach(w=>{const m=/^([a-z-]+): (.*)$/.exec(w);const k=m?m[1]:'note';(groups[k]=groups[k]||[]).push(m?m[2]:w);});
+  const title={evidence:'Evidence chain',identity:'Identity (B1)',lifecycle:'Lifecycle / succession (B2)',pointer:'JSON Pointers (B3/B4/B9)',access:'Access tiers (B3)',conformance:'Conformance level',proof:'Trust envelope',jose:'Trust envelope'};
+  Object.entries(groups).forEach(([k,ws])=>c.push(check(title[k]||k,'w',ws.length===1?ws[0]:ws.length+' warnings',ws.length===1?null:ws)));
+  if(!r.warnings.length) c.push(check('v0.2 consistency','p','identity, lifecycle, access-tier and applicability pointers consistent — no warnings'));
+  return c;
+}
+function setStat(id,val,cls){const el=document.getElementById(id);el.textContent=val;el.className='n'+(id==='vLevel'?'':' sm')+(cls?' '+cls:'');}
+function renderReport(r){
+  const rep=document.getElementById('repV'), ver=document.getElementById('verV');
+  const out={pass:false,level:null,identityLevel:null,lifecycleStatus:null,errors:[],warnings:[]};
+  if(r.parseError){
+    renderChecks(rep,[check('Parsed','f',r.parseError)]);
+    ver.innerHTML='<div class="verdict bad" data-verdict="fail">FAIL — not parseable</div>';
+    setStat('vLevel','—','dim');setStat('vIdent','—','dim');setStat('vLife','—','dim');
+    ['vLevelName','vIdentSrc','vLifeSrc'].forEach(i=>document.getElementById(i).innerHTML='&nbsp;');
+    out.errors=[r.parseError]; window.lastResult=out; return;
+  }
+  renderChecks(rep,reportChecks(r));
+  setStat('vLevel',r.pass?String(r.level):'✗',r.pass?'':'bad');
+  document.getElementById('vLevelName').textContent=r.pass?LEVEL_NAMES[r.level]:'not assessed (errors)';
+  setStat('vIdent',r.identityLevel||'unspecified',r.identityLevel?'':'dim');
+  document.getElementById('vIdentSrc').textContent=r.identitySource||'subjectType '+(r.passport.subjectType||'absent');
+  setStat('vLife',r.lifecycleStatus||'original',r.lifecycleStatus?'':'dim');
+  document.getElementById('vLifeSrc').textContent=r.lifecycleStatus?'declared':'no lifecycle ⇒ original';
+  const extra=[r.identityLevel?'identity: '+r.identityLevel:null,r.lifecycleStatus?'lifecycle: '+r.lifecycleStatus:null].filter(Boolean).join(' · ');
+  ver.innerHTML=r.pass?
+    '<div class="verdict ok" data-verdict="pass">PASS — conformance level '+r.level+' ('+LEVEL_NAMES[r.level]+(r.level===3?', signature indicated not verified':'')+')'+(extra?' · '+esc(extra):'')+(r.warnings.length?' · '+r.warnings.length+' warning(s)':'')+'</div>':
+    '<div class="verdict bad" data-verdict="fail">FAIL — '+r.errors.length+' error(s); tools/validate.py would reject this passport</div>';
+  Object.assign(out,{pass:r.pass,level:r.level,identityLevel:r.identityLevel,lifecycleStatus:r.lifecycleStatus,errors:r.errors,warnings:r.warnings});
+  window.lastResult=out;
+}
+
+// ---------- build tab ----------
+const V=id=>parseFloat(document.getElementById(id).value)||0;
 function computeModel(){
   const steps=[
     {name:'Shred', i:V('s_i'), o:V('s_o'), w:V('s_w')},
@@ -158,44 +535,63 @@ function computeModel(){
     {name:'Blend', i:V('b_p')+V('b_v'), o:V('b_o'), w:V('b_w')},
     {name:'Pack', i:V('p_i'), o:V('p_o'), w:V('p_w')},
   ];
+  steps.forEach(s=>{s.diff=s.i-(s.o+s.w);s.ok=Math.abs(s.diff)<=TOLERANCE_KG;});
   const pcrIn=V('b_p'), virgin=V('b_v');
-  const pcrFrac=(pcrIn+virgin)>0 ? pcrIn/(pcrIn+virgin) : 0;
-  const yieldPct=V('i0')>0 ? V('e_o')/V('i0') : 0;
-  const mbOK=steps.every(s=> s.i>0 && Math.abs(s.i-(s.o+s.w))/s.i<=TOL);
-  return {steps, pcrFrac, yieldPct, mbOK, pcrIn, virgin};
+  const pcrFrac=(pcrIn+virgin)>0?pcrIn/(pcrIn+virgin):0;
+  const yieldPct=V('i0')>0?V('e_o')/V('i0'):0;
+  return {steps, pcrFrac, yieldPct, mbOK:steps.every(s=>s.ok), pcrIn, virgin};
 }
+const POLYMER_NAMES={HDPE:'High-density polyethylene',LDPE:'Low-density polyethylene',PP:'Polypropylene',PET:'Polyethylene terephthalate'};
 function buildPassport(){
-  const m=computeModel();
+  const m=computeModel(), bid=document.getElementById('bid').value.trim()||'BATCH-1', mat=document.getElementById('mat').value;
+  const frac=+m.pcrFrac.toFixed(4), slug=bid.replace(/[^A-Za-z0-9-]/g,'-');
+  const days=['2026-07-30T10:15:00Z','2026-07-31T09:00:00Z','2026-08-01T13:30:00Z','2026-08-02T10:45:00Z','2026-08-02T15:20:00Z'];
+  const intake={eventID:'urn:uuid:e1-intake-'+slug,type:'ObjectEvent',bizStep:'receiving',eventTime:'2026-07-28T08:05:00Z',inputNote:'Post-consumer '+mat+' bales, '+V('i0')+' kg'};
+  const evs=m.steps.map((s,ix)=>{
+    const ev={eventID:'urn:uuid:e'+(ix+2)+'-'+s.name.toLowerCase()+'-'+slug,type:s.name==='Pack'?'AggregationEvent':'TransformationEvent',bizStep:s.name==='Pack'?'packing':'transforming',eventTime:days[ix]};
+    if(s.name==='Blend') ev.note='Blend: '+m.pcrIn+' kg PCR + '+m.virgin+' kg virgin carrier';
+    ev['ukmp:massBalanceDelta']={inputKg:s.i,outputKg:s.o,wasteKg:s.w};
+    return ev;
+  });
+  const all=[intake,...evs];
   return {
-    "@context":["https://schema.materialspassport.org.uk/v0.1/context.jsonld"],
+    "@context":["https://ref.gs1.org/standards/epcis/epcis-context.jsonld","https://schema.materialspassport.org.uk/v0.2/context.jsonld","https://schema.materialspassport.org.uk/v0.1/plastics-context.jsonld"],
     "type":"ukmp:MaterialPassport",
-    "passportId":"https://id.gs1.org/01/05060987654321/10/"+document.getElementById('bid').value,
-    "subjectType":"MaterialBatch","conformanceLevel":2,
-    "description":V('p_o')+" kg post-consumer recycled "+document.getElementById('mat').value+" pellet",
-    "recycledContent":{"postConsumerFraction":+m.pcrFrac.toFixed(4),"calculationMethod":"mass-balance","evidenceType":"epcis-event-chain","verificationStatus":"evidence-linked"},
-    "processingHistory":{"epcisEvents":m.steps.map((s,ix)=>({"type":ix===0?"TransformationEvent":"TransformationEvent","bizStep":"transforming","step":s.name.toLowerCase(),"ukmp:massBalanceDelta":{"inputKg":s.i,"outputKg":s.o,"wasteKg":s.w}}))},
-    "ukRegulatory":{"pptStatus":{"inScope":true,"recycledFractionForPpt":+m.pcrFrac.toFixed(4),"meetsThreshold":m.pcrFrac>=0.3}}
+    "passportId":"https://id.gs1.org/01/05060987654321/10/"+encodeURIComponent(bid),
+    "subjectType":"MaterialBatch",
+    "identityLevel":"batch",
+    "gs1:lgtin":"05060987654321."+bid,
+    "conformanceLevel":2,
+    "issuerParty":{"name":"Example Recycler Ltd","gs1:gln":"5060123456789","role":"reprocessor"},
+    "issueDate":"2026-08-03",
+    "description":V('p_o')+" kg post-consumer recycled "+mat+" pellet (playground-built, illustrative)",
+    "composition":{"materialFamily":"polymer","ukmp-plastics:polymerType":mat,"ukmp-plastics:form":"pellet","substances":[{"name":POLYMER_NAMES[mat],"massFraction":1}]},
+    "recycledContent":{"preConsumerFraction":0,"postConsumerFraction":frac,"totalRecycledFraction":frac,
+      "calculationMethod":"controlled-blending","chainOfCustodyModel":"segregated","feedstockSource":"post-consumer-packaging",
+      "evidenceType":"epcis-event-chain","evidenceRefs":[intake.eventID,evs[0].eventID,evs[2].eventID,evs[3].eventID],"verificationStatus":"evidence-linked"},
+    "processingHistory":{"epcisEvents":all,"traversable":true},
+    "lifecycle":{"status":"original"},
+    "ukRegulatory":{"pptStatus":{"inScope":true,"recycledFractionForPpt":frac,"evidenceRef":evs[3].eventID}}
   };
-}
-function check(name,ok,detail,warn){return {name,ok,detail,warn};}
-function renderChecks(el,checks){
-  el.innerHTML=checks.map(c=>'<div class="check"><span class="ic '+(c.warn?'w':(c.ok?'p':'f'))+'">'+(c.warn?'!':(c.ok?'✓':'✗'))+'</span><span><b>'+c.name+'</b> — '+c.detail+'</span></div>').join('');
 }
 function refreshBuild(){
   const m=computeModel();
   document.getElementById('pcr').textContent=(m.pcrFrac*100).toFixed(1)+'%';
   document.getElementById('yld').textContent=(m.yieldPct*100).toFixed(1)+'%';
-  const mbEl=document.getElementById('mb');
-  mbEl.textContent=m.mbOK?'✓':'✗'; mbEl.className='n'+(m.mbOK?'':' bad');
-  const checks=m.steps.map(s=>{
-    const d=s.i-(s.o+s.w); const ok=s.i>0&&Math.abs(d)/Math.max(s.i,1)<=TOL;
-    return check(s.name+' reconciles', ok, ok?(s.i+' in = '+s.o+' out + '+s.w+' waste'):('off by '+d.toFixed(1)+' kg — inputs must equal outputs + waste'));
-  });
-  checks.push(check('Recycled content computed', true, (m.pcrFrac*100).toFixed(1)+'% = '+m.pcrIn+' kg PCR ÷ ('+m.pcrIn+' + '+m.virgin+' kg virgin) at blend'));
-  checks.push(check('PPT threshold (≥30%)', m.pcrFrac>=0.3, m.pcrFrac>=0.3?'above the Plastic Packaging Tax recycled-content threshold':'below 30% — PPT would apply', m.pcrFrac>=0.3?false:true));
+  const mbEl=document.getElementById('mb'); mbEl.textContent=m.mbOK?'✓':'✗'; mbEl.className='n'+(m.mbOK?'':' bad');
+  const checks=m.steps.map(s=>check(s.name+' reconciles',s.ok?'p':'f',s.ok?(s.i+' in = '+s.o+' out + '+s.w+' waste'):('off by '+s.diff.toFixed(1)+' kg — inputs must equal outputs + waste (±'+TOLERANCE_KG+' kg)')));
+  checks.push(check('Recycled content computed','p',(m.pcrFrac*100).toFixed(1)+'% = '+m.pcrIn+' kg PCR ÷ ('+m.pcrIn+' + '+m.virgin+' kg virgin) at blend'));
+  checks.push(check('PPT threshold (≥30%)',m.pcrFrac>=0.3?'p':'w',m.pcrFrac>=0.3?'above the Plastic Packaging Tax recycled-content threshold':'below 30% — PPT would apply'));
+  if(DATA.schema){
+    const r=validateText(JSON.stringify(buildPassport()));
+    checks.push(r.schemaErrors.length?check('JSON Schema v0.2','f',r.schemaErrors.length+' error(s)',r.schemaErrors):check('JSON Schema v0.2','p','generated passport is schema-valid'));
+    if(r.warnings.length) checks.push(check('Warnings','w',r.warnings.length+' warning(s)',r.warnings));
+    document.getElementById('verB').innerHTML='<div class="verdict '+(r.pass?'ok':'bad')+'" data-verdict="'+(r.pass?'pass':'fail')+'">'+(r.pass?
+      'PASS — Level '+r.level+' ('+LEVEL_NAMES[r.level]+'): every claim traces to reconciled events · identity: '+r.identityLevel+' · lifecycle: '+r.lifecycleStatus:
+      'FAIL — '+r.errors.length+' error(s); this passport would be rejected')+'</div>';
+    window.lastBuild={pass:r.pass,level:r.level,errors:r.errors,warnings:r.warnings};
+  }
   renderChecks(document.getElementById('repB'),checks);
-  const all=m.mbOK;
-  document.getElementById('verB').innerHTML='<div class="verdict '+(all?'ok':'bad')+'">'+(all?'PASS — Level 2 (evidence-linked): every claim traces to reconciled events':'FAIL — mass balance does not reconcile; this passport would be rejected')+'</div>';
   if(!document.getElementById('jsonBox').classList.contains('hide')) document.getElementById('jsonOut').textContent=JSON.stringify(buildPassport(),null,2);
 }
 function showJson(){document.getElementById('jsonBox').classList.remove('hide');document.getElementById('jsonOut').textContent=JSON.stringify(buildPassport(),null,2);}
@@ -206,47 +602,31 @@ function downloadJson(){
 document.querySelectorAll('#paneB input,#paneB select').forEach(e=>e.addEventListener('input',refreshBuild));
 
 // ---------- validate tab ----------
-const PRESETS={
- good:{"@context":["https://www.w3.org/ns/credentials/v2","https://schema.materialspassport.org.uk/v0.1/context.jsonld"],"type":["VerifiableCredential","MaterialPassportCredential"],"issuer":"https://passports.materiai.co.uk/tenants/example-recycler","credentialSubject":{"type":"ukmp:MaterialPassport","passportId":"https://id.gs1.org/01/05060987654321/10/B26-0803-HD","conformanceLevel":3,"description":"1,000 kg post-consumer recycled HDPE pellet","recycledContent":{"postConsumerFraction":0.87,"calculationMethod":"mass-balance","evidenceType":"epcis-event-chain","verificationStatus":"evidence-linked"},"processingHistory":{"epcisEvents":[{"bizStep":"transforming","step":"shred","ukmp:massBalanceDelta":{"inputKg":1240,"outputKg":1176,"wasteKg":64}},{"bizStep":"transforming","step":"wash","ukmp:massBalanceDelta":{"inputKg":1176,"outputKg":1128,"wasteKg":48}},{"bizStep":"transforming","step":"extrude","ukmp:massBalanceDelta":{"inputKg":1128,"outputKg":1102,"wasteKg":26}},{"bizStep":"transforming","step":"blend","ukmp:pcrInputKg":890,"ukmp:virginInputKg":130,"ukmp:massBalanceDelta":{"inputKg":1020,"outputKg":1004,"wasteKg":16}},{"bizStep":"packing","step":"pack","ukmp:massBalanceDelta":{"inputKg":1004,"outputKg":1000,"wasteKg":4}}]}},"proof":{"type":"DataIntegrityProof","cryptosuite":"ecdsa-jcs-2019","proofValue":"z3FXQjecWufY…demo"}},
- min:{"@context":["https://schema.materialspassport.org.uk/v0.1/context.jsonld"],"type":"ukmp:MaterialPassport","passportId":"https://id.gs1.org/01/05060111222333/10/L1-0001","conformanceLevel":1,"description":"500 kg recycled LDPE film pellet","recycledContent":{"postConsumerFraction":0.60,"calculationMethod":"declared","verificationStatus":"self-declared"}},
- bad:{"@context":["https://schema.materialspassport.org.uk/v0.1/context.jsonld"],"type":"ukmp:MaterialPassport","passportId":"https://id.gs1.org/01/05060111222333/10/X-666","conformanceLevel":2,"description":"1,000 kg 'recycled' pellet — tampered example","recycledContent":{"postConsumerFraction":0.95,"calculationMethod":"mass-balance","evidenceType":"epcis-event-chain","verificationStatus":"evidence-linked"},"processingHistory":{"epcisEvents":[{"bizStep":"transforming","step":"blend","ukmp:pcrInputKg":600,"ukmp:virginInputKg":400,"ukmp:massBalanceDelta":{"inputKg":1000,"outputKg":1050,"wasteKg":10}}]}}
-};
-function preset(k){document.getElementById('pasted').value=JSON.stringify(PRESETS[k],null,2);runValidate();}
-function runValidate(){
-  const rep=document.getElementById('repV'), ver=document.getElementById('verV');
-  let doc;
-  try{doc=JSON.parse(document.getElementById('pasted').value);}catch(e){rep.innerHTML='';renderChecks(rep,[check('JSON parses',false,'not valid JSON: '+e.message)]);ver.innerHTML='<div class="verdict bad">FAIL — not parseable</div>';return;}
-  const isVC=Array.isArray(doc.type)&&doc.type.includes('VerifiableCredential');
-  const p=isVC?(doc.credentialSubject||{}):doc;
-  const checks=[];
-  checks.push(check('JSON parses',true,'well-formed document'));
-  const ctx=JSON.stringify(doc['@context']||'');
-  checks.push(check('UKMP context',ctx.includes('materialspassport.org.uk'),ctx.includes('materialspassport.org.uk')?'schema context declared':'missing UKMP @context'));
-  const req=['passportId','description','recycledContent'];
-  const missing=req.filter(k=>!p[k]);
-  checks.push(check('Required fields',missing.length===0,missing.length===0?'passportId, description, recycledContent present':'missing: '+missing.join(', ')));
-  const rc=p.recycledContent||{};
-  const fracOK=typeof rc.postConsumerFraction==='number'&&rc.postConsumerFraction>=0&&rc.postConsumerFraction<=1;
-  checks.push(check('Recycled-content fraction',fracOK,fracOK?(rc.postConsumerFraction*100).toFixed(1)+'% · method: '+(rc.calculationMethod||'unstated'):'postConsumerFraction must be a number in [0,1]'));
-  let evOK=true, evDetail='no event chain (acceptable at Level 1 with method "declared")', evPresent=false, claimOK=true;
-  const evs=((p.processingHistory||{}).epcisEvents)||[];
-  if(evs.length){evPresent=true;
-    let bad=[];
-    evs.forEach(e=>{const d=e['ukmp:massBalanceDelta'];if(d){const diff=d.inputKg-(d.outputKg+d.wasteKg);if(Math.abs(diff)/Math.max(d.inputKg,1)>TOL)bad.push((e.step||e.bizStep)+' off by '+diff.toFixed(1)+' kg');}});
-    evOK=bad.length===0; evDetail=evOK?evs.length+' events, all reconcile (in = out + waste)':bad.join('; ');
-    const blend=evs.find(e=>typeof e['ukmp:pcrInputKg']==='number');
-    if(blend&&fracOK){const computed=blend['ukmp:pcrInputKg']/(blend['ukmp:pcrInputKg']+blend['ukmp:virginInputKg']);
-      claimOK=Math.abs(computed-rc.postConsumerFraction)<=0.02;
-      checks.push(check('Claim matches evidence',claimOK,claimOK?('declared '+(rc.postConsumerFraction*100).toFixed(0)+'% ≈ computed '+(computed*100).toFixed(1)+'% from blend inputs'):('declared '+(rc.postConsumerFraction*100).toFixed(0)+'% but the event chain computes '+(computed*100).toFixed(1)+'% — the claim is not supported by the evidence')));}
-  } else if((rc.calculationMethod||'')!=='declared'&&rc.evidenceType){evOK=false;evDetail='evidenceType set but no events supplied';}
-  checks.push(check('Mass balance',evOK,evDetail,!evPresent));
-  if(isVC){checks.push(check('Trust envelope',!!doc.proof,'W3C VC with proof ('+(doc.proof&&doc.proof.cryptosuite||'?')+') — signature verification runs in the full toolkit, not this demo',true));}
-  const structOK=missing.length===0&&fracOK;
-  const level=!structOK?0:(isVC&&doc.proof&&evOK&&claimOK)?3:(evPresent&&evOK&&claimOK)?2:1;
-  const pass=structOK&&evOK&&claimOK;
-  renderChecks(rep,checks);
-  ver.innerHTML='<div class="verdict '+(pass?'ok':'bad')+'">'+(pass?('PASS — conformance level '+level+' ('+['','Core / self-declared','Evidence-linked','Verified (signature indicated)'][level]+')'):'FAIL — this passport would be rejected by the validator')+'</div>';
+// A deliberately broken passport: claim arithmetic and weights do not add up (errors), and the v0.2
+// identity / lifecycle / access-tier fields contradict themselves (warnings).
+const BROKEN={"@context":["https://schema.materialspassport.org.uk/v0.2/context.jsonld"],"type":"ukmp:MaterialPassport",
+ "passportId":"https://id.gs1.org/01/05060111222333/10/X-666","subjectType":"MaterialBatch","identityLevel":"item","gs1:lgtin":"05060111222333.X-666",
+ "conformanceLevel":2,"issuerParty":{"name":"Example Tamperer Ltd","role":"reprocessor"},"issueDate":"2026-11-02",
+ "description":"ILLUSTRATIVE — 1,000 kg 'recycled' pellet with a claim its evidence does not support",
+ "composition":{"materialFamily":"polymer","substances":[{"name":"Polypropylene","massFraction":1}]},
+ "recycledContent":{"preConsumerFraction":0.05,"postConsumerFraction":0.95,"totalRecycledFraction":0.95,"calculationMethod":"controlled-blending","chainOfCustodyModel":"segregated",
+   "evidenceType":"epcis-event-chain","evidenceRefs":["urn:uuid:x1-blend","urn:uuid:x9-missing"],"verificationStatus":"evidence-linked"},
+ "processingHistory":{"epcisEvents":[{"eventID":"urn:uuid:x1-blend","type":"TransformationEvent","bizStep":"transforming","eventTime":"2026-10-30T10:00:00Z","note":"Blend: 600 kg PCR + 400 kg virgin","ukmp:massBalanceDelta":{"inputKg":1000,"outputKg":1050,"wasteKg":10}}]},
+ "lifecycle":{"status":"repurposed"},
+ "accessPolicy":{"defaultTier":"public","fieldTiers":[{"path":"/passportId","tier":"authority"},{"path":"/composition/additives","tier":"legitimate-interest"}]},
+ "fieldStatus":[{"path":"/environmentalFootprint","status":"required","basis":"illustrative"}]};
+async function preset(k){
+  await window.ukmpReady;
+  const v=k==='broken'?BROKEN:DATA.examples[k];
+  document.getElementById('pasted').value=JSON.stringify(v,null,2);
+  runValidate();
 }
+function runValidate(){
+  if(!DATA.schema){window.ukmpReady.then(runValidate);return;}
+  renderReport(validateText(document.getElementById('pasted').value));
+}
+
+window.ukmpReady=loadData().then(()=>refreshBuild()).catch(e=>{document.getElementById('srcNote').textContent='Could not load the schema: '+e.message;throw e;});
 refreshBuild();
 </script>
 </body>

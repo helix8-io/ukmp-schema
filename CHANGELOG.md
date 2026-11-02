@@ -103,6 +103,12 @@ specified.
   `identityLevel`/`subjectType` contradiction. Reports the effective
   identity level and lifecycle status. Root identifier `anyOf` failures
   now print a one-line message instead of the whole passport.
+- Browser playground (`docs/index.html`) updated to v0.2: validates
+  against the embedded v0.2 schema (or the live `schema/` and `examples/`
+  files when served from a checkout), ports the `tools/validate.py` v0.2
+  checks and warnings, shows identity level and lifecycle status, loads
+  the five current examples as presets, and links the D2.1 API spec and
+  D2.3 user guides.
 - `IMPLEMENTATION_STATUS.md` — per-conformance-level reference
   implementation coverage table (post-0.1.0; updated for v0.2).
 
