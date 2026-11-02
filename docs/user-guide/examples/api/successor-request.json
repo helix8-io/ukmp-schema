@@ -1,0 +1,55 @@
+{
+  "lifecycleStatus": "recycled",
+  "transitionEventID": "https://passports.example-sme.co.uk/events/compound-run-CR-1102",
+  "effectiveAt": "2026-11-02T11:00:00Z",
+  "reason": "Regrind batch PP-2026-0142 consumed in compounding run CR-1102.",
+  "successor": {
+    "@context": [
+      "https://schema.materialspassport.org.uk/v0.2/context.jsonld"
+    ],
+    "type": "ukmp:MaterialPassport",
+    "passportId": "https://passports.example-sme.co.uk/passports/urn:uuid:9a7e4c21-3b6d-5f80-a1c2-7d9e0f1a2b3c",
+    "subjectType": "MaterialBatch",
+    "identityLevel": "batch",
+    "alternativeId": {
+      "scheme": "internal-batch-ref",
+      "value": "CP-2026-1102"
+    },
+    "lifecycle": {
+      "status": "recycled",
+      "predecessorRefs": [
+        "https://passports.example-sme.co.uk/passports/urn:uuid:e4e73173-c5cb-52f5-8674-0abb4a098ea9"
+      ],
+      "statusChangedAt": "2026-11-02T11:00:00Z"
+    },
+    "conformanceLevel": 1,
+    "issuerParty": {
+      "name": "Example SME Reprocessing Ltd",
+      "role": "compounder"
+    },
+    "issueDate": "2026-11-02",
+    "description": "Grey PP compound made from regrind batch PP-2026-0142",
+    "composition": {
+      "materialFamily": "polymer",
+      "substances": [
+        {
+          "name": "Polypropylene",
+          "massFraction": 0.98
+        },
+        {
+          "name": "Process stabiliser package",
+          "massFraction": 0.02
+        }
+      ]
+    },
+    "recycledContent": {
+      "preConsumerFraction": 0.049,
+      "postConsumerFraction": 0.931,
+      "totalRecycledFraction": 0.98,
+      "calculationMethod": "declared",
+      "evidenceType": "supplier-declaration",
+      "verificationStatus": "self-declared",
+      "feedstockSource": "mixed"
+    }
+  }
+}

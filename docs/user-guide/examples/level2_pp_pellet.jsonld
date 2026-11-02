@@ -1,0 +1,103 @@
+{
+  "@context": [
+    "https://ref.gs1.org/standards/epcis/epcis-context.jsonld",
+    "https://schema.materialspassport.org.uk/v0.2/context.jsonld",
+    "https://schema.materialspassport.org.uk/v0.1/plastics-context.jsonld"
+  ],
+  "type": "ukmp:MaterialPassport",
+  "passportId": "https://id.gs1.org/01/05060987654338/10/PP-2026-0150",
+  "subjectType": "MaterialBatch",
+  "identityLevel": "batch",
+  "gs1:lgtin": "05060987654338.PP-2026-0150",
+  "sectorProfile": "https://schema.materialspassport.org.uk/v0.1/profiles/plastics",
+  "conformanceLevel": 2,
+  "issuerParty": { "name": "Example SME Reprocessing Ltd", "gs1:gln": "5060123456789", "role": "reprocessor" },
+  "issueDate": "2026-10-23",
+  "description": "975 kg grey PP pellet, injection-moulding grade",
+  "composition": {
+    "materialFamily": "polymer",
+    "ukmp-plastics:polymerType": "PP",
+    "ukmp-plastics:form": "pellet",
+    "ukmp-plastics:colour": "grey",
+    "substances": [
+      { "name": "Polypropylene", "massFraction": 0.98, "casNumber": "9003-07-0" },
+      { "name": "Residual contamination (non-target polymer)", "massFraction": 0.02 }
+    ]
+  },
+  "recycledContent": {
+    "preConsumerFraction": 0.05,
+    "postConsumerFraction": 0.905,
+    "totalRecycledFraction": 0.955,
+    "calculationMethod": "controlled-blending",
+    "chainOfCustodyModel": "segregated",
+    "evidenceType": "epcis-event-chain",
+    "evidenceRefs": [
+      "https://passports.example-sme.co.uk/events/intake-pc-bales",
+      "https://passports.example-sme.co.uk/events/intake-pi-scrap",
+      "https://passports.example-sme.co.uk/events/shred-wash",
+      "https://passports.example-sme.co.uk/events/extrude-blend"
+    ],
+    "verificationStatus": "evidence-linked",
+    "feedstockSource": "mixed"
+  },
+  "processingHistory": {
+    "traversable": true,
+    "epcisEvents": [
+      {
+        "eventID": "https://passports.example-sme.co.uk/events/intake-pc-bales",
+        "type": "ObjectEvent", "action": "ADD", "bizStep": "receiving",
+        "eventTime": "2026-10-20T08:10:00Z", "eventTimeZoneOffset": "+01:00",
+        "quantityList": [{ "epcClass": "https://id.gs1.org/01/05060987654000/10/IN-2026-0981", "quantity": 1000, "uom": "KGM" }],
+        "sourceList": [{ "type": "owning_party", "source": "urn:epc:id:sgln:5060555.00001.0" }],
+        "bizLocation": { "id": "urn:epc:id:sgln:5060123.45678.0" }
+      },
+      {
+        "eventID": "https://passports.example-sme.co.uk/events/intake-pi-scrap",
+        "type": "ObjectEvent", "action": "ADD", "bizStep": "receiving",
+        "eventTime": "2026-10-20T11:30:00Z", "eventTimeZoneOffset": "+01:00",
+        "quantityList": [{ "epcClass": "https://id.gs1.org/01/05060987654000/10/IN-2026-0982", "quantity": 50, "uom": "KGM" }],
+        "sourceList": [{ "type": "owning_party", "source": "urn:epc:id:sgln:5060777.00002.0" }]
+      },
+      {
+        "eventID": "https://passports.example-sme.co.uk/events/nir-sort",
+        "type": "ObjectEvent", "action": "OBSERVE", "bizStep": "inspecting",
+        "eventTime": "2026-10-21T09:00:00Z", "eventTimeZoneOffset": "+01:00",
+        "quantityList": [{ "epcClass": "https://id.gs1.org/01/05060987654000/10/IN-2026-0981", "quantity": 1000, "uom": "KGM" }],
+        "ukmp:verificationExtension": { "instrument": "NIR", "measuredPolymerClass": "PP", "contaminationLevel": 0.038 }
+      },
+      {
+        "eventID": "https://passports.example-sme.co.uk/events/shred-wash",
+        "type": "TransformationEvent", "bizStep": "transforming",
+        "eventTime": "2026-10-21T15:40:00Z", "eventTimeZoneOffset": "+01:00",
+        "inputQuantityList": [{ "epcClass": "https://id.gs1.org/01/05060987654000/10/IN-2026-0981", "quantity": 1000, "uom": "KGM" }],
+        "outputQuantityList": [{ "epcClass": "https://id.gs1.org/01/05060987654000/10/FL-2026-0150", "quantity": 905, "uom": "KGM" }],
+        "ukmp:massBalanceDelta": { "inputKg": 1000, "outputKg": 905, "wasteKg": 95 }
+      },
+      {
+        "eventID": "https://passports.example-sme.co.uk/events/extrude-blend",
+        "type": "TransformationEvent", "bizStep": "transforming",
+        "eventTime": "2026-10-22T13:20:00Z", "eventTimeZoneOffset": "+01:00",
+        "inputQuantityList": [
+          { "epcClass": "https://id.gs1.org/01/05060987654000/10/FL-2026-0150", "quantity": 905, "uom": "KGM" },
+          { "epcClass": "https://id.gs1.org/01/05060987654000/10/IN-2026-0982", "quantity": 50, "uom": "KGM" },
+          { "epcClass": "https://id.gs1.org/01/05060987654000/10/VIRGIN-PP-MB-2210", "quantity": 45, "uom": "KGM" }
+        ],
+        "outputQuantityList": [{ "epcClass": "https://id.gs1.org/01/05060987654338/10/PP-2026-0150", "quantity": 975, "uom": "KGM" }],
+        "ukmp:massBalanceDelta": { "inputKg": 1000, "outputKg": 975, "wasteKg": 25 }
+      },
+      {
+        "eventID": "https://passports.example-sme.co.uk/events/despatch",
+        "type": "ObjectEvent", "action": "OBSERVE", "bizStep": "shipping",
+        "eventTime": "2026-10-23T07:45:00Z", "eventTimeZoneOffset": "+01:00",
+        "quantityList": [{ "epcClass": "https://id.gs1.org/01/05060987654338/10/PP-2026-0150", "quantity": 975, "uom": "KGM" }],
+        "destinationList": [{ "type": "owning_party", "destination": "urn:epc:id:sgln:5060888.00003.0" }]
+      }
+    ]
+  },
+  "ukRegulatory": {
+    "endOfWasteStatus": { "achieved": true, "basis": "individual-assessment", "atEvent": "https://passports.example-sme.co.uk/events/extrude-blend" },
+    "wasteHierarchyPosition": "recycling",
+    "recoveryCode": "R3",
+    "pptStatus": { "inScope": true, "recycledFractionForPpt": 0.905, "evidenceRef": "https://passports.example-sme.co.uk/events/extrude-blend" }
+  }
+}

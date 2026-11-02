@@ -1,0 +1,32 @@
+{
+  "batteries": {
+    "total": 82,
+    "a": 2,
+    "b": 17,
+    "c": 63,
+    "d": 0,
+    "a_plus_b_pct": 23.2,
+    "coverage_pct": 100.0,
+    "bespoke_pct": 76.8
+  },
+  "textiles": {
+    "total": 26,
+    "a": 8,
+    "b": 4,
+    "c": 14,
+    "d": 0,
+    "a_plus_b_pct": 46.2,
+    "coverage_pct": 100.0,
+    "bespoke_pct": 53.8
+  },
+  "construction": {
+    "total": 62,
+    "a": 13,
+    "b": 22,
+    "c": 27,
+    "d": 0,
+    "a_plus_b_pct": 56.5,
+    "coverage_pct": 100.0,
+    "bespoke_pct": 43.5
+  }
+}

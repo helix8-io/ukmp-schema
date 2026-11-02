@@ -1,8 +1,8 @@
 cff-version: 1.2.0
 message: "If you use the UK Materials Passport Schema, please cite it as below."
 title: "UK Materials Passport Schema (ukmp)"
-version: 0.1.0
-date-released: 2026-08-11
+version: 0.2.0
+date-released: 2026-11-02
 type: dataset
 authors:
   - family-names: Harrison
@@ -30,7 +30,7 @@ keywords:
   - Materials 4.0
 license: Apache-2.0
 url: "https://www.materiai.co.uk"
-repository-code: "https://github.com/materiAI/ukmp-schema"
+repository-code: "https://github.com/helix8-io/ukmp-schema"
 identifiers:
   - type: other
     value: "Innovate UK project 10188380"

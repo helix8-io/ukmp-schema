@@ -1,0 +1,2638 @@
+openapi: 3.1.0
+
+info:
+  title: UK Materials Passport Exchange API
+  version: 1.0.0
+  summary: Issue, retrieve, revise, verify and exchange UK Materials Passports between organisations.
+  description: |
+    The exchange plane of the UK Materials Passport (`ukmp`) infrastructure.
+    Any conformant system — ERP, MES, traceability platform, recycler
+    portal or regulator tooling — can implement this interface. Passports
+    cross organisational boundaries, so every operation assumes the
+    consumer does **not** run the producer's software.
+
+    Innovate UK project 10188380 (National Materials Innovation Programme
+    feasibility study), WP2 deliverable **D2.1**. The reference
+    implementation is D2.2; integration guides are D2.3.
+
+    ## Data model
+
+    Passport payloads are defined by the published JSON Schema
+    (`schema/material_passport.schema.json`, referenced — not copied — by
+    this document). A passport is exchanged either as a **bare passport**
+    (a JSON-LD `ukmp:MaterialPassport` object) or wrapped in a
+    **W3C Verifiable Credential Data Model v2.0 envelope** with the passport
+    as `credentialSubject`. Level 3 credentials are secured either by a
+    JOSE enveloping proof (compact JWS, `application/vc+jwt`, `alg: ES256`;
+    the preferred securing) or by an embedded Data Integrity proof
+    (`ecdsa-jcs-2019`).
+
+    ## Conformance levels
+
+    Levels are per passport and machine-detectable; `POST /verify` reports
+    the level a document actually achieves.
+
+    | Level | Name | Requires |
+    |---|---|---|
+    | 1 | Core | Schema-valid passport, resolvable identifiers, self-declared claims |
+    | 2 | Evidence-linked | Level 1 + every recycled-content claim traceable to a traversable EPCIS 2.0 event chain; mass balance reconciles |
+    | 3 | Verified | Level 2 + VC envelope whose proof validates against the issuer's published key (`/.well-known/ukmp/keys`) and a status-list entry showing it is not revoked |
+
+    An API implementation may serve passports of any level. An
+    implementation that claims Level 3 *verification* support MUST accept
+    both securings on `POST /verify`.
+
+    ## Revisions versus successors
+
+    Passports are **append-only**. A *revision* corrects or updates the
+    record for the **same subject** (same `passportId` lineage,
+    `POST /passports/{passportKey}/revisions`). A *successor* is a **new
+    passport for a changed subject** after a lifecycle transition — for
+    example a battery repurposed for stationary storage
+    (`POST /passports/{passportKey}/successors`). Predecessor and
+    successor are linked both ways through `lifecycle.predecessorRefs` /
+    `lifecycle.successorRefs` (schema v0.2, field group B2).
+
+    ## Role-based access tiers
+
+    Field-level disclosure follows the passport's `accessPolicy`
+    (schema v0.2, field group B3) and the caller's OAuth2 scope:
+
+    | Scope held | Tiers disclosed |
+    |---|---|
+    | none (anonymous) or `passports:read` | `public` |
+    | `passports:read:legitimate-interest` | `public`, `legitimate-interest` |
+    | `passports:read:authority` | all tiers |
+
+    Withheld members are **omitted**, and their JSON Pointers (relative to
+    `credentialSubject`) are listed both in the `UKMP-Withheld-Paths`
+    response header and in the body's `ukmp:redaction` member. A redacted
+    view cannot carry the issuer's proof (the signed bytes have changed),
+    so redacted views are served as unsigned `application/ld+json` only and
+    verify at most to Level 2. Passports with no `accessPolicy` (all v0.1
+    passports) are wholly `public`. Selective-disclosure credential formats
+    (e.g. SD-JWT VC, aligned with EN 18239 / EN 18246 once cited) are a
+    candidate future mechanism for signed partial disclosure; they are
+    **not** normative in this version.
+
+    ## Why OpenAPI 3.1
+
+    The project application referred to "OpenAPI 3.0". This specification
+    uses **OpenAPI 3.1.0**, the current 3.x release, because 3.1 schema
+    objects are full JSON Schema 2020-12: the passport schema is referenced
+    directly by `$ref` with no lossy down-conversion, and webhooks are
+    described natively. Adopters whose tooling only reads a single file
+    should use the bundled form `api/dist/openapi.bundled.yaml`.
+
+    ## Conventions
+
+    * Errors use RFC 9457 `application/problem+json`.
+    * `POST` operations that create resources accept an `Idempotency-Key`
+      header; a replay with the same key and body returns the original
+      result, a replay with a different body returns `409`.
+    * Collections use opaque cursor pagination (`cursor`, `limit`) and an
+      RFC 8288 `Link: <…>; rel="next"` header.
+    * Write operations on an existing passport require `If-Match` with the
+      current `ETag` (optimistic concurrency).
+  contact:
+    name: Helix8 Ltd — UK Materials Passport project
+    email: contact@helix8.io
+    url: https://github.com/helix8-io/ukmp-schema
+  license:
+    name: Apache-2.0
+    identifier: Apache-2.0
+
+externalDocs:
+  description: UK Materials Passport schema specification
+  url: https://github.com/helix8-io/ukmp-schema/tree/main/spec
+
+servers:
+  - url: https://passports.example.org/ukmp/v1
+    description: Placeholder — replace with the implementer's base URL.
+
+tags:
+  - name: Passports
+    description: Issue, retrieve and discover passports.
+  - name: Lifecycle
+    description: Append-only revisions, lifecycle successors and credential status (revoke / suspend).
+  - name: Traceability
+    description: EPCIS 2.0 event chains for genealogy traversal.
+  - name: Verification
+    description: Structured verification reports and conformance-level detection.
+  - name: Exchange
+    description: Push passports to trading partners with delivery receipts (despatch → goods-in).
+  - name: Trust
+    description: Public key material and Bitstring Status List credentials. No authentication.
+
+security:
+  - oauth2: []
+
+paths:
+  /passports:
+    post:
+      operationId: createPassport
+      tags: [Passports]
+      summary: Create (issue) a passport
+      description: |
+        Issues a new passport. The body is either a JSON-LD passport (bare or
+        VC-enveloped) or a pre-signed compact JWS (`application/vc+jwt`).
+        The server assigns a `passportKey` (returned in `Location`), allocates a
+        status-list entry, and — where it acts as issuer and supports Level 3
+        issuance — secures the credential. The response body is the passport as
+        stored.
+
+        Creation is idempotent per `Idempotency-Key`. A `passportId` that already
+        exists on this server returns `409`; use `/revisions` to update it.
+      security:
+        - oauth2: [passports:write]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/ld+json:
+            schema:
+              $ref: '#/components/schemas/PassportDocument'
+            examples:
+              level3Credential:
+                $ref: '#/components/examples/PassportCredentialHdpe'
+              level1Bare:
+                $ref: '#/components/examples/PassportBareLevel1'
+          application/vc+jwt:
+            schema:
+              $ref: '#/components/schemas/CompactJws'
+            examples:
+              signedCredential:
+                $ref: '#/components/examples/PassportJws'
+      responses:
+        '201':
+          description: Passport created.
+          headers:
+            Location:
+              $ref: '#/components/headers/Location'
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/ld+json:
+              schema:
+                $ref: '#/components/schemas/PassportDocument'
+              examples:
+                created:
+                  $ref: '#/components/examples/PassportCredentialHdpe'
+        '200':
+          description: Idempotent replay — the passport created by the earlier request with the same `Idempotency-Key`.
+          headers:
+            Location:
+              $ref: '#/components/headers/Location'
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/ld+json:
+              schema:
+                $ref: '#/components/schemas/PassportDocument'
+              examples:
+                replay:
+                  $ref: '#/components/examples/PassportBareLevel1'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '422':
+          $ref: '#/components/responses/UnprocessableContent'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+    get:
+      operationId: listPassports
+      tags: [Passports]
+      summary: List and query passports
+      description: |
+        Batch discovery for trading partners. Returns lightweight summaries;
+        fetch the full document with `GET /passports/{passportKey}`. Filters
+        combine with AND. `from` / `to` bound the passport's last-modified time
+        (`lastUpdated`, else `issueDate`). Results are ordered by last-modified
+        time, newest first.
+      security:
+        - oauth2: [passports:read]
+        - oauth2: [passports:read:legitimate-interest]
+        - oauth2: [passports:read:authority]
+      parameters:
+        - name: gtin
+          in: query
+          description: GS1 GTIN (8–14 digits) of the product type.
+          schema:
+            type: string
+            pattern: '^[0-9]{8,14}$'
+          example: '05060987654321'
+        - name: lgtin
+          in: query
+          description: GS1 LGTIN (`GTIN.lot`) of a batch.
+          schema:
+            type: string
+          example: 05060987654321.B26-0803-HD
+        - name: from
+          in: query
+          description: Inclusive lower bound on last-modified time (RFC 3339).
+          schema:
+            type: string
+            format: date-time
+          example: '2026-08-01T00:00:00Z'
+        - name: to
+          in: query
+          description: Exclusive upper bound on last-modified time (RFC 3339).
+          schema:
+            type: string
+            format: date-time
+          example: '2026-09-01T00:00:00Z'
+        - name: identityLevel
+          in: query
+          description: Identity granularity (schema v0.2 field `identityLevel`). Passports without the field are matched by their `subjectType` (`MaterialBatch` ⇒ `batch`).
+          schema:
+            $ref: '#/components/schemas/IdentityLevel'
+        - name: lifecycleStatus
+          in: query
+          description: Lifecycle status (schema v0.2 field `lifecycle.status`). Passports without the field are treated as `original`.
+          schema:
+            $ref: '#/components/schemas/LifecycleStatus'
+        - name: credentialStatus
+          in: query
+          description: Status-list state of the passport.
+          schema:
+            $ref: '#/components/schemas/CredentialState'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: A page of passport summaries.
+          headers:
+            Link:
+              $ref: '#/components/headers/Link'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PassportSummaryPage'
+              examples:
+                byGtin:
+                  $ref: '#/components/examples/PassportSummaryPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /passports/{passportKey}:
+    parameters:
+      - $ref: '#/components/parameters/PassportKey'
+    get:
+      operationId: getPassport
+      tags: [Passports]
+      summary: Retrieve a passport
+      description: |
+        Fetches a passport. This is also the resolution target of the GS1 Digital
+        Link for the batch or item. Content negotiation via `Accept`:
+
+        * `application/ld+json` — JSON-LD passport (bare or VC-enveloped);
+        * `application/vc+jwt` — the issuer-signed compact JWS, byte-for-byte as
+          issued (only when nothing is withheld from the caller; otherwise `406`);
+        * `text/html` — human-readable passport view showing the conformance level.
+
+        Anonymous callers are permitted and receive the `public` tier.
+        Fields above the caller's tier are omitted and listed in
+        `UKMP-Withheld-Paths` (see *Role-based access tiers*). Revoked and
+        suspended passports remain retrievable; their status is reported via
+        the status list.
+      security:
+        - {}
+        - oauth2: [passports:read]
+        - oauth2: [passports:read:legitimate-interest]
+        - oauth2: [passports:read:authority]
+      parameters:
+        - name: revision
+          in: query
+          description: Return a specific historical revision instead of the current one.
+          schema:
+            type: integer
+            minimum: 1
+          example: 1
+        - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: The passport, filtered to the caller's access tier.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+            UKMP-Withheld-Paths:
+              $ref: '#/components/headers/WithheldPaths'
+            Vary:
+              description: Responses vary by negotiated media type and by caller tier.
+              schema:
+                type: string
+              example: Accept, Authorization
+          content:
+            application/ld+json:
+              schema:
+                $ref: '#/components/schemas/PassportView'
+              examples:
+                authorityFullView:
+                  $ref: '#/components/examples/PassportCredentialHdpe'
+                publicRedactedView:
+                  $ref: '#/components/examples/PassportRedactedPublic'
+            application/vc+jwt:
+              schema:
+                $ref: '#/components/schemas/CompactJws'
+              examples:
+                signedCredential:
+                  $ref: '#/components/examples/PassportJws'
+            text/html:
+              schema:
+                type: string
+              examples:
+                humanView:
+                  summary: Human-readable view (truncated)
+                  value: |
+                    <!doctype html><html lang="en"><head><title>Material passport B26-0803-HD</title></head>
+                    <body><h1>Recycled HDPE pellet — batch B26-0803-HD</h1>
+                    <p>Conformance level: 3 (Verified). Post-consumer recycled content: 87 %.</p></body></html>
+        '304':
+          description: Not modified (the `If-None-Match` ETag is current).
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '406':
+          $ref: '#/components/responses/NotAcceptable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /passports/{passportKey}/revisions:
+    parameters:
+      - $ref: '#/components/parameters/PassportKey'
+    get:
+      operationId: listPassportRevisions
+      tags: [Lifecycle]
+      summary: List revisions of a passport
+      description: |
+        Returns the append-only revision history, newest first. Each entry
+        identifies the revision number, reason and digest; fetch a historical
+        document with `GET /passports/{passportKey}?revision=n`.
+      security:
+        - oauth2: [passports:read]
+        - oauth2: [passports:read:legitimate-interest]
+        - oauth2: [passports:read:authority]
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: A page of revisions.
+          headers:
+            Link:
+              $ref: '#/components/headers/Link'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RevisionPage'
+              examples:
+                twoRevisions:
+                  $ref: '#/components/examples/RevisionPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+    post:
+      operationId: createPassportRevision
+      tags: [Lifecycle]
+      summary: Append a revision
+      description: |
+        Supersedes the current document for the **same subject** with a new
+        revision. Earlier revisions are never mutated or deleted. The supplied
+        passport MUST keep the same `passportId`; changing the subject (e.g.
+        repurposing) requires `POST /passports/{passportKey}/successors` instead
+        and is rejected here with `422`. Requires `If-Match` with the current ETag.
+      security:
+        - oauth2: [passports:write]
+      parameters:
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RevisionRequest'
+            examples:
+              correction:
+                $ref: '#/components/examples/RevisionRequest'
+      responses:
+        '201':
+          description: Revision appended.
+          headers:
+            Location:
+              $ref: '#/components/headers/Location'
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Revision'
+              examples:
+                appended:
+                  $ref: '#/components/examples/Revision'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '422':
+          $ref: '#/components/responses/UnprocessableContent'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /passports/{passportKey}/successors:
+    parameters:
+      - $ref: '#/components/parameters/PassportKey'
+    post:
+      operationId: createPassportSuccessor
+      tags: [Lifecycle]
+      summary: Issue a successor passport after a lifecycle transition
+      description: |
+        Issues a **new** passport for a subject whose identity or purpose has
+        changed (prepared for reuse, repurposed, remanufactured, waste,
+        recycled). The server links the two both ways: the successor's
+        `lifecycle.predecessorRefs` includes the predecessor's `passportId`, and
+        a revision is appended to the predecessor adding the successor to
+        `lifecycle.successorRefs`. The predecessor is not revoked — it remains
+        the authoritative record of the subject's earlier life. Fires
+        `passport.succeeded`.
+      security:
+        - oauth2: [passports:write]
+      parameters:
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SuccessionRequest'
+            examples:
+              recycledToPellet:
+                $ref: '#/components/examples/SuccessionRequest'
+      responses:
+        '201':
+          description: Successor issued and linked.
+          headers:
+            Location:
+              $ref: '#/components/headers/Location'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessionResult'
+              examples:
+                linked:
+                  $ref: '#/components/examples/SuccessionResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '422':
+          $ref: '#/components/responses/UnprocessableContent'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /passports/{passportKey}/status:
+    parameters:
+      - $ref: '#/components/parameters/PassportKey'
+    post:
+      operationId: updatePassportStatus
+      tags: [Lifecycle]
+      summary: Revoke, suspend or reinstate a passport
+      description: |
+        Sets or clears the passport's bit in its Bitstring Status List
+        (`credentialStatus`), so that previously distributed copies are flagged
+        on verification without being edited. `revoke` is permanent (recall,
+        withdrawal, issued in error); `suspend` is reversible with `reinstate`.
+        Reinstating a revoked passport returns `409`. Fires `passport.revoked`
+        on revocation.
+      security:
+        - oauth2: [passports:write]
+      parameters:
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StatusUpdate'
+            examples:
+              recall:
+                $ref: '#/components/examples/StatusUpdateRevoke'
+      responses:
+        '200':
+          description: Status updated. The new state is visible in the status list within the list's published TTL.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PassportStatus'
+              examples:
+                revoked:
+                  $ref: '#/components/examples/PassportStatusRevoked'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableContent'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /passports/{passportKey}/events:
+    parameters:
+      - $ref: '#/components/parameters/PassportKey'
+    get:
+      operationId: listPassportEvents
+      tags: [Traceability]
+      summary: Traverse the EPCIS event chain
+      description: |
+        Returns the GS1 EPCIS 2.0 events (JSON-LD binding) behind the passport,
+        for genealogy traversal from an output batch back to feedstock intakes
+        (`upstream`) or forward to downstream uses (`downstream`). Events
+        carry the project extensions `ukmp:massBalanceDelta` and
+        `ukmp:verificationExtension` where present. Events above the caller's
+        tier are omitted and counted in `withheldCount`.
+      security:
+        - oauth2: [passports:read]
+        - oauth2: [passports:read:legitimate-interest]
+        - oauth2: [passports:read:authority]
+      externalDocs:
+        description: GS1 EPCIS 2.0 / CBV 2.0
+        url: https://ref.gs1.org/standards/epcis/
+      parameters:
+        - name: direction
+          in: query
+          description: Traversal direction relative to this passport's subject.
+          schema:
+            type: string
+            enum: [upstream, downstream, both]
+            default: upstream
+        - name: depth
+          in: query
+          description: Maximum number of transformation hops to follow across passports. `1` returns this passport's own events only.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 20
+            default: 1
+        - name: eventType
+          in: query
+          description: Restrict to one EPCIS event type.
+          schema:
+            $ref: '#/components/schemas/EpcisEventType'
+        - name: bizStep
+          in: query
+          description: Restrict to one CBV business step (bare CBV term, e.g. `transforming`).
+          schema:
+            type: string
+          example: transforming
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: A page of EPCIS events, in event-time order.
+          headers:
+            Link:
+              $ref: '#/components/headers/Link'
+          content:
+            application/ld+json:
+              schema:
+                $ref: '#/components/schemas/EpcisEventPage'
+              examples:
+                upstream:
+                  $ref: '#/components/examples/EpcisEventPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /verify:
+    post:
+      operationId: verifyPassport
+      tags: [Verification]
+      summary: Verify a passport document
+      description: |
+        Runs the conformance checks against a submitted passport and returns a
+        structured `VerificationReport` with a per-check `pass` / `fail` / `skip`
+        result and the conformance level actually achieved. A document that
+        fails checks still returns `200` — the report *is* the result. `422` is
+        reserved for input that cannot be parsed as a passport at all.
+
+        | Check | L1 | L2 | L3 |
+        |---|---|---|---|
+        | `schema-valid` | ✔ | ✔ | ✔ |
+        | `identifiers-resolve` | ✔ | ✔ | ✔ |
+        | `recycled-fraction-arithmetic` | ✔ | ✔ | ✔ |
+        | `evidence-traceable`, `genealogy-traversable`, `mass-balance-reconciles` | | ✔ | ✔ |
+        | `proof-valid` (JOSE or Data Integrity) | | | ✔ |
+        | `status-not-revoked` | | | ✔ |
+        | `time-anchor-valid` (optional; where configured) | | | ✔ |
+
+        With `resolve=false` the network-dependent checks
+        (`identifiers-resolve`, `proof-valid`, `status-not-revoked`,
+        `time-anchor-valid`) are reported as `skip` and the achieved level is
+        capped at 2.
+      security:
+        - oauth2: [verify]
+      parameters:
+        - name: resolve
+          in: query
+          description: Perform network-dependent checks (identifier resolution, key retrieval, status list fetch).
+          schema:
+            type: boolean
+            default: true
+        - name: targetLevel
+          in: query
+          description: Stop after evaluating the checks for this level. Checks above it are reported as `skip`.
+          schema:
+            $ref: '#/components/schemas/ConformanceLevel'
+      requestBody:
+        required: true
+        content:
+          application/ld+json:
+            schema:
+              $ref: '#/components/schemas/PassportDocument'
+            examples:
+              level3Credential:
+                $ref: '#/components/examples/PassportCredentialHdpe'
+              level1Bare:
+                $ref: '#/components/examples/PassportBareLevel1'
+          application/vc+jwt:
+            schema:
+              $ref: '#/components/schemas/CompactJws'
+            examples:
+              signedCredential:
+                $ref: '#/components/examples/PassportJws'
+      responses:
+        '200':
+          description: Verification report.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerificationReport'
+              examples:
+                evidenceLinkedProofFails:
+                  $ref: '#/components/examples/VerificationReportLevel2'
+                level1Pass:
+                  $ref: '#/components/examples/VerificationReportLevel1'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '422':
+          $ref: '#/components/responses/UnprocessableContent'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /exchanges:
+    post:
+      operationId: createExchange
+      tags: [Exchange]
+      summary: Push a passport to a trading partner
+      description: |
+        Delivers a passport to a trading partner's goods-in endpoint (itself an
+        implementation of this API, receiving via `exchange.received`) and tracks
+        the delivery receipt. Links the despatch (SSCC, despatch advice, shipping
+        event) to the partner's goods-in. Delivery is asynchronous: the response is
+        `202` with a receipt in state `queued`; poll `GET /exchanges/{exchangeId}`
+        or supply `callbackUrl`. The passport is disclosed to the recipient at the
+        stated `disclosureTier`, never above the sender's own entitlement.
+      security:
+        - oauth2: [exchange]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExchangeRequest'
+            examples:
+              despatchToConverter:
+                $ref: '#/components/examples/ExchangeRequest'
+      responses:
+        '202':
+          description: Exchange accepted for delivery.
+          headers:
+            Location:
+              $ref: '#/components/headers/Location'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExchangeReceipt'
+              examples:
+                queued:
+                  $ref: '#/components/examples/ExchangeReceiptQueued'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '422':
+          $ref: '#/components/responses/UnprocessableContent'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /exchanges/{exchangeId}:
+    parameters:
+      - $ref: '#/components/parameters/ExchangeId'
+    get:
+      operationId: getExchange
+      tags: [Exchange]
+      summary: Get an exchange and its delivery receipt
+      description: Returns the current delivery state of an exchange, including the recipient's signed acknowledgement once received.
+      security:
+        - oauth2: [exchange]
+      responses:
+        '200':
+          description: Exchange state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExchangeReceipt'
+              examples:
+                acknowledged:
+                  $ref: '#/components/examples/ExchangeReceiptAcknowledged'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /.well-known/ukmp/keys:
+    servers:
+      - url: https://passports.example.org
+        description: Well-known URIs are served from the origin root (RFC 8615), not under the API base path.
+    get:
+      operationId: getIssuerKeys
+      tags: [Trust]
+      summary: Get the issuer's verification keys (JWKS)
+      description: |
+        Publishes the issuer's current and historical public verification keys
+        as an RFC 7517 JWK Set. Retired keys stay published (with `ukmp:status:
+        retired`) so passports signed before rotation remain verifiable. Keys
+        are ECDSA P-256 (`ES256`); the same key material serves JOSE and
+        `ecdsa-jcs-2019` Data Integrity proofs. Public, cacheable, no
+        authentication.
+      security: []
+      responses:
+        '200':
+          description: JWK Set.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+          content:
+            application/jwk-set+json:
+              schema:
+                $ref: '#/components/schemas/JwkSet'
+              examples:
+                currentAndRetired:
+                  $ref: '#/components/examples/JwkSet'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /status/{listId}:
+    parameters:
+      - name: listId
+        in: path
+        required: true
+        description: Status list identifier, as in the `statusListCredential` URL of a passport's `credentialStatus`.
+        schema:
+          type: string
+          pattern: '^[A-Za-z0-9._-]{1,64}$'
+        example: '3'
+    get:
+      operationId: getStatusList
+      tags: [Trust]
+      summary: Get a Bitstring Status List credential
+      description: |
+        Returns the W3C Bitstring Status List credential referenced by passports'
+        `credentialStatus.statusListCredential`. Verifiers decode `encodedList`
+        (multibase base64url of a GZIP-compressed bitstring, minimum 16 KB) and
+        test bit `statusListIndex`. Public, cacheable, no authentication; served
+        signed (`application/vc+jwt`) where the issuer supports Level 3, otherwise
+        as JSON-LD.
+      security: []
+      externalDocs:
+        description: W3C Bitstring Status List v1.0
+        url: https://www.w3.org/TR/vc-bitstring-status-list/
+      responses:
+        '200':
+          description: The status list credential.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/ld+json:
+              schema:
+                $ref: '#/components/schemas/BitstringStatusListCredential'
+              examples:
+                revocationList:
+                  $ref: '#/components/examples/StatusListCredential'
+            application/vc+jwt:
+              schema:
+                $ref: '#/components/schemas/CompactJws'
+              examples:
+                signedList:
+                  $ref: '#/components/examples/StatusListJws'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+webhooks:
+  passport.revised:
+    post:
+      operationId: onPassportRevised
+      tags: [Lifecycle]
+      summary: A passport you subscribe to has a new revision
+      description: Sent to subscribers when a revision is appended. Fetch the new document with the `href` in `data`.
+      parameters:
+        - $ref: '#/components/parameters/WebhookSignature'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PassportRevisedEvent'
+            examples:
+              revised:
+                $ref: '#/components/examples/WebhookPassportRevised'
+      responses:
+        '204':
+          description: Received. Any 2xx acknowledges; other responses are retried with exponential backoff for up to 24 h.
+  passport.revoked:
+    post:
+      operationId: onPassportRevoked
+      tags: [Lifecycle]
+      summary: A passport you subscribe to was revoked or suspended
+      description: Sent when a passport's status-list bit is set (revocation or suspension) or cleared (reinstatement of a suspension).
+      parameters:
+        - $ref: '#/components/parameters/WebhookSignature'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PassportRevokedEvent'
+            examples:
+              revoked:
+                $ref: '#/components/examples/WebhookPassportRevoked'
+      responses:
+        '204':
+          description: Received.
+  passport.succeeded:
+    post:
+      operationId: onPassportSucceeded
+      tags: [Lifecycle]
+      summary: A successor passport was issued
+      description: Sent when a successor passport is issued for a subject after a lifecycle transition.
+      parameters:
+        - $ref: '#/components/parameters/WebhookSignature'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PassportSucceededEvent'
+            examples:
+              succeeded:
+                $ref: '#/components/examples/WebhookPassportSucceeded'
+      responses:
+        '204':
+          description: Received.
+  exchange.received:
+    post:
+      operationId: onExchangeReceived
+      tags: [Exchange]
+      summary: Inbound passport delivery (goods-in)
+      description: |
+        Delivered by a sender's `POST /exchanges` to the recipient's goods-in
+        endpoint. The recipient responds `200` with a signed receipt, which the
+        sender surfaces in `ExchangeReceipt.acknowledgement`.
+      parameters:
+        - $ref: '#/components/parameters/WebhookSignature'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExchangeReceivedEvent'
+            examples:
+              inbound:
+                $ref: '#/components/examples/WebhookExchangeReceived'
+      responses:
+        '200':
+          description: Received and acknowledged.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliveryAcknowledgement'
+              examples:
+                ack:
+                  $ref: '#/components/examples/DeliveryAcknowledgement'
+        '422':
+          description: Rejected by the recipient (e.g. passport does not match the despatch). The sender records state `rejected`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+              examples:
+                mismatch:
+                  value:
+                    type: https://schema.materialspassport.org.uk/problems/despatch-mismatch
+                    title: Passport does not match despatch
+                    status: 422
+                    detail: LGTIN 05060987654321.B26-0803-HD is not on despatch advice DA-2026-08-0412.
+
+components:
+  securitySchemes:
+    oauth2:
+      type: oauth2
+      description: |
+        OAuth 2.0 client-credentials grant (system-to-system). Read scopes are
+        hierarchical for disclosure purposes: `passports:read:authority`
+        implies `passports:read:legitimate-interest` implies `passports:read`.
+      flows:
+        clientCredentials:
+          tokenUrl: https://passports.example.org/oauth2/token
+          scopes:
+            passports:read: Read passports — public tier only.
+            passports:read:legitimate-interest: Read passports — public and legitimate-interest tiers.
+            passports:read:authority: Read passports — all tiers (market-surveillance and enforcement authorities).
+            passports:write: Create passports, append revisions, issue successors, change credential status.
+            verify: Submit documents to the verifier.
+            exchange: Push passports to trading partners and read delivery receipts.
+
+  parameters:
+    PassportKey:
+      name: passportKey
+      in: path
+      required: true
+      description: |
+        Server-assigned passport key (as returned in `Location`), or the
+        passport's `passportId` URI percent-encoded as a single path segment.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 2048
+      example: urn:uuid:8f2b7c1e-4d3a-4f6b-9e2d-1a5c7b9d0e42
+    ExchangeId:
+      name: exchangeId
+      in: path
+      required: true
+      description: Exchange identifier, as returned in `Location` by `POST /exchanges`.
+      schema:
+        type: string
+        format: uuid
+      example: 0b6f3c2a-91d4-4e8a-b7f0-5d2c9e1a4b36
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: |
+        Client-generated unique key (UUID recommended) making the request safe to
+        retry. Keys are retained for at least 24 hours.
+      schema:
+        type: string
+        minLength: 8
+        maxLength: 255
+      example: 6c1f7a2e-3b44-4c0e-9f51-8a7d2e0b9c13
+    IfMatch:
+      name: If-Match
+      in: header
+      required: true
+      description: Current `ETag` of the passport. Mismatch returns `412`; absence returns `428`.
+      schema:
+        type: string
+      example: '"rev-2-sha256-9f2c41"'
+    IfNoneMatch:
+      name: If-None-Match
+      in: header
+      required: false
+      description: Conditional retrieval; returns `304` if the ETag is current.
+      schema:
+        type: string
+      example: '"rev-2-sha256-9f2c41"'
+    Cursor:
+      name: cursor
+      in: query
+      description: Opaque cursor from a previous page's `nextCursor`. Omit for the first page.
+      schema:
+        type: string
+        maxLength: 512
+      example: eyJrIjoiMjAyNi0wOC0wM1QxNDoyMjowMFoifQ
+    Limit:
+      name: limit
+      in: query
+      description: Maximum items per page.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 200
+        default: 50
+      example: 50
+    WebhookSignature:
+      name: UKMP-Webhook-Signature
+      in: header
+      required: true
+      description: |
+        Detached compact JWS (RFC 7515 Appendix F) over the raw request body,
+        signed with a key published at the sender's `/.well-known/ukmp/keys`.
+        Receivers MUST verify it before acting on the event.
+      schema:
+        type: string
+        pattern: '^[A-Za-z0-9_-]+\.\.[A-Za-z0-9_-]+$'
+      example: eyJhbGciOiJFUzI1NiIsImtpZCI6IjIwMjYtMSIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19..SUxMVVNUUkFUSVZFLVNJRw
+
+  headers:
+    Location:
+      description: URL of the created resource.
+      schema:
+        type: string
+        format: uri-reference
+      example: /ukmp/v1/passports/urn:uuid:8f2b7c1e-4d3a-4f6b-9e2d-1a5c7b9d0e42
+    ETag:
+      description: Entity tag of the current revision; use with `If-Match` on writes.
+      schema:
+        type: string
+      example: '"rev-2-sha256-9f2c41"'
+    WithheldPaths:
+      description: |
+        Comma-separated JSON Pointers (relative to `credentialSubject`) of members
+        omitted because they exceed the caller's access tier. Absent when nothing
+        is withheld.
+      schema:
+        type: string
+      example: /composition/substances,/processingHistory
+    Link:
+      description: RFC 8288 pagination links (`rel="next"`).
+      schema:
+        type: string
+      example: '</ukmp/v1/passports?cursor=eyJrIjoiMjAyNi0wOC0wM1QxNDoyMjowMFoifQ&limit=50>; rel="next"'
+    CacheControl:
+      description: Caching directives for public trust material.
+      schema:
+        type: string
+      example: public, max-age=300
+    RetryAfter:
+      description: Seconds to wait before retrying.
+      schema:
+        type: integer
+        minimum: 0
+      example: 30
+    RateLimit:
+      description: Remaining quota and reset (IETF RateLimit header fields).
+      schema:
+        type: string
+      example: '"default";r=0;t=30'
+    WwwAuthenticate:
+      description: OAuth 2.0 bearer challenge (RFC 6750).
+      schema:
+        type: string
+      example: Bearer realm="ukmp", error="invalid_token"
+
+  responses:
+    BadRequest:
+      description: Malformed request (syntax, parameter types, unparseable JSON).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          examples:
+            badParameter:
+              value:
+                type: https://schema.materialspassport.org.uk/problems/invalid-parameter
+                title: Invalid query parameter
+                status: 400
+                detail: "'from' must be an RFC 3339 date-time."
+                errors:
+                  - pointer: '#/query/from'
+                    message: expected date-time, got '03/08/2026'
+    Unauthorized:
+      description: Missing or invalid access token.
+      headers:
+        WWW-Authenticate:
+          $ref: '#/components/headers/WwwAuthenticate'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          examples:
+            invalidToken:
+              value:
+                type: https://schema.materialspassport.org.uk/problems/unauthorized
+                title: Authentication required
+                status: 401
+                detail: The access token has expired.
+    Forbidden:
+      description: The token lacks the scope required for this operation, or the caller may not act on this resource.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          examples:
+            missingScope:
+              value:
+                type: https://schema.materialspassport.org.uk/problems/insufficient-scope
+                title: Insufficient scope
+                status: 403
+                detail: This operation requires scope 'passports:write'.
+    NotFound:
+      description: No such resource.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          examples:
+            notFound:
+              value:
+                type: https://schema.materialspassport.org.uk/problems/not-found
+                title: Not found
+                status: 404
+                detail: No passport with key 'urn:uuid:00000000-0000-0000-0000-000000000000'.
+    NotAcceptable:
+      description: |
+        The requested media type cannot be served — e.g. `application/vc+jwt`
+        requested by a caller whose tier would require fields to be withheld.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          examples:
+            signedUnavailable:
+              value:
+                type: https://schema.materialspassport.org.uk/problems/signed-view-unavailable
+                title: Signed credential not available at this tier
+                status: 406
+                detail: Fields are withheld at tier 'public'; request application/ld+json for a redacted view.
+    Conflict:
+      description: Conflicts with current state (duplicate `passportId`, idempotency-key reuse with a different body, invalid status transition).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          examples:
+            duplicate:
+              value:
+                type: https://schema.materialspassport.org.uk/problems/duplicate-passport
+                title: Passport already exists
+                status: 409
+                detail: passportId https://id.gs1.org/01/05060987654321/10/B26-0803-HD already exists; append a revision instead.
+            revokedIsFinal:
+              value:
+                type: https://schema.materialspassport.org.uk/problems/invalid-status-transition
+                title: Revocation is permanent
+                status: 409
+                detail: A revoked passport cannot be reinstated.
+    PreconditionFailed:
+      description: '`If-Match` does not match the current ETag — someone else revised the passport first.'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          examples:
+            staleEtag:
+              value:
+                type: https://schema.materialspassport.org.uk/problems/stale-etag
+                title: Precondition failed
+                status: 412
+                detail: Current ETag is "rev-3-sha256-a71b02".
+    PreconditionRequired:
+      description: '`If-Match` is required on writes to an existing passport.'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          examples:
+            missingIfMatch:
+              value:
+                type: https://schema.materialspassport.org.uk/problems/if-match-required
+                title: Precondition required
+                status: 428
+                detail: Supply If-Match with the passport's current ETag.
+    UnsupportedMediaType:
+      description: Request `Content-Type` is not supported by this operation.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          examples:
+            wrongType:
+              value:
+                type: https://schema.materialspassport.org.uk/problems/unsupported-media-type
+                title: Unsupported media type
+                status: 415
+                detail: Use application/ld+json or application/vc+jwt.
+    UnprocessableContent:
+      description: Well-formed but semantically invalid — fails the passport JSON Schema, or breaks a lifecycle rule.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          examples:
+            schemaInvalid:
+              value:
+                type: https://schema.materialspassport.org.uk/problems/schema-invalid
+                title: Passport fails schema validation
+                status: 422
+                detail: 2 schema violations.
+                errors:
+                  - pointer: /credentialSubject/recycledContent/totalRecycledFraction
+                    message: 1.3 is greater than the maximum of 1
+                  - pointer: /credentialSubject/composition
+                    message: "'substances' is a required property"
+    TooManyRequests:
+      description: Rate limit exceeded.
+      headers:
+        Retry-After:
+          $ref: '#/components/headers/RetryAfter'
+        RateLimit:
+          $ref: '#/components/headers/RateLimit'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          examples:
+            slowDown:
+              value:
+                type: https://schema.materialspassport.org.uk/problems/rate-limited
+                title: Too many requests
+                status: 429
+                detail: Quota of 600 requests per minute exceeded.
+
+  schemas:
+    # ---- Passport documents -------------------------------------------------
+    MaterialPassport:
+      description: |
+        The `ukmp:MaterialPassport` object (credentialSubject), as defined by the
+        published passport JSON Schema. Referenced, not copied: this document
+        always uses the schema version in the same repository release.
+      $ref: '../schema/material_passport.schema.json'
+    JsonLdContext:
+      description: JSON-LD `@context` — a context IRI, an inline context, or an array of these.
+      oneOf:
+        - type: string
+          format: uri
+        - type: object
+        - type: array
+          minItems: 1
+          items:
+            oneOf:
+              - type: string
+                format: uri
+              - type: object
+    BarePassport:
+      title: Bare passport
+      description: A JSON-LD passport without a credential envelope (Levels 1–2).
+      allOf:
+        - $ref: '#/components/schemas/MaterialPassport'
+        - type: object
+          required: ['@context']
+          properties:
+            '@context':
+              $ref: '#/components/schemas/JsonLdContext'
+    PassportCredential:
+      title: VC-enveloped passport
+      description: |
+        W3C Verifiable Credential Data Model v2.0 envelope with the passport as
+        `credentialSubject`. May carry an embedded Data Integrity proof
+        (`ecdsa-jcs-2019`) — required for Level 3 when not JOSE-secured.
+      type: object
+      required: ['@context', type, issuer, credentialSubject]
+      properties:
+        '@context':
+          $ref: '#/components/schemas/JsonLdContext'
+        id:
+          type: string
+          format: uri
+        type:
+          type: array
+          contains:
+            const: VerifiableCredential
+          items:
+            type: string
+        issuer:
+          oneOf:
+            - type: string
+              format: uri
+            - type: object
+              required: [id]
+              properties:
+                id:
+                  type: string
+                  format: uri
+                name:
+                  type: string
+        validFrom:
+          type: string
+          format: date-time
+        validUntil:
+          type: string
+          format: date-time
+        credentialStatus:
+          $ref: '#/components/schemas/BitstringStatusListEntry'
+        credentialSubject:
+          $ref: '#/components/schemas/MaterialPassport'
+        proof:
+          $ref: '#/components/schemas/DataIntegrityProof'
+    PassportDocument:
+      description: A passport as exchanged in JSON-LD — either bare or VC-enveloped.
+      oneOf:
+        - $ref: '#/components/schemas/PassportCredential'
+        - $ref: '#/components/schemas/BarePassport'
+    RedactedPassportView:
+      title: Redacted (tier-filtered) view
+      description: |
+        A passport from which members above the caller's tier have been omitted.
+        Carries `ukmp:redaction`, never an embedded `proof` (it would not verify),
+        and need not satisfy the full passport schema's `required` members.
+      type: object
+      required: ['@context', 'ukmp:redaction']
+      not:
+        required: [proof]
+      properties:
+        '@context':
+          $ref: '#/components/schemas/JsonLdContext'
+        'ukmp:redaction':
+          $ref: '#/components/schemas/Redaction'
+        credentialSubject:
+          type: object
+          required: [type, passportId]
+          properties:
+            type:
+              const: ukmp:MaterialPassport
+            passportId:
+              type: string
+              format: uri
+    Redaction:
+      type: object
+      required: [tier, withheldPaths]
+      properties:
+        tier:
+          $ref: '#/components/schemas/AccessTier'
+        withheldPaths:
+          type: array
+          description: JSON Pointers relative to `credentialSubject` (or document root for a bare passport).
+          items:
+            type: string
+            pattern: '^(/[^/]*)+$'
+    PassportView:
+      description: Response of `GET /passports/{passportKey}` as JSON-LD — full document, or redacted view.
+      anyOf:
+        - $ref: '#/components/schemas/PassportDocument'
+        - $ref: '#/components/schemas/RedactedPassportView'
+    CompactJws:
+      description: |
+        JOSE-enveloped Verifiable Credential (or status list credential) as a
+        compact JWS: `BASE64URL(header).BASE64URL(payload).BASE64URL(signature)`,
+        header `alg: ES256`, `typ: vc+jwt`.
+      type: string
+      pattern: '^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$'
+    DataIntegrityProof:
+      type: object
+      required: [type, cryptosuite, verificationMethod, proofPurpose, proofValue]
+      properties:
+        type:
+          const: DataIntegrityProof
+        cryptosuite:
+          type: string
+          examples: [ecdsa-jcs-2019]
+        created:
+          type: string
+          format: date-time
+        verificationMethod:
+          type: string
+          format: uri
+        proofPurpose:
+          type: string
+          examples: [assertionMethod]
+        proofValue:
+          type: string
+    BitstringStatusListEntry:
+      type: object
+      required: [type, statusPurpose, statusListIndex, statusListCredential]
+      properties:
+        id:
+          type: string
+          format: uri
+        type:
+          const: BitstringStatusListEntry
+        statusPurpose:
+          type: string
+          enum: [revocation, suspension]
+        statusListIndex:
+          type: string
+          pattern: '^[0-9]+$'
+        statusListCredential:
+          type: string
+          format: uri
+
+    # ---- Enumerations ---------------------------------------------------------
+    ConformanceLevel:
+      type: integer
+      enum: [1, 2, 3]
+    AccessTier:
+      type: string
+      enum: [public, legitimate-interest, authority]
+    IdentityLevel:
+      type: string
+      enum: [productType, batch, item]
+    LifecycleStatus:
+      type: string
+      enum: [original, prepared-for-reuse, reused, repurposed, remanufactured, waste, recycled]
+    CredentialState:
+      type: string
+      enum: [active, suspended, revoked]
+    EpcisEventType:
+      type: string
+      enum: [ObjectEvent, AggregationEvent, TransformationEvent, TransactionEvent, AssociationEvent]
+
+    # ---- Collections ----------------------------------------------------------
+    Page:
+      type: object
+      required: [items, limit]
+      properties:
+        items:
+          type: array
+        nextCursor:
+          type: [string, 'null']
+          description: Cursor for the next page; `null` on the last page.
+        limit:
+          type: integer
+          minimum: 1
+    PassportSummary:
+      type: object
+      required: [passportKey, passportId, subjectType, href, credentialStatus]
+      properties:
+        passportKey:
+          type: string
+        passportId:
+          type: string
+          format: uri
+        href:
+          type: string
+          format: uri-reference
+        subjectType:
+          type: string
+        identityLevel:
+          $ref: '#/components/schemas/IdentityLevel'
+        gs1:gtin:
+          type: string
+        gs1:lgtin:
+          type: string
+        gs1:sgtin:
+          type: string
+        issueDate:
+          type: string
+          format: date
+        lastUpdated:
+          type: string
+          format: date-time
+        conformanceLevel:
+          $ref: '#/components/schemas/ConformanceLevel'
+        lifecycleStatus:
+          $ref: '#/components/schemas/LifecycleStatus'
+        credentialStatus:
+          $ref: '#/components/schemas/CredentialState'
+        currentRevision:
+          type: integer
+          minimum: 1
+    PassportSummaryPage:
+      allOf:
+        - $ref: '#/components/schemas/Page'
+        - type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/PassportSummary'
+    EpcisEvent:
+      description: |
+        A GS1 EPCIS 2.0 event in the JSON-LD binding. Described loosely here;
+        the normative definition is the EPCIS 2.0 JSON Schema. `ukmp:` extension
+        members are permitted.
+      type: object
+      required: [eventID, type]
+      properties:
+        eventID:
+          type: string
+          format: uri
+        type:
+          $ref: '#/components/schemas/EpcisEventType'
+        eventTime:
+          type: string
+          format: date-time
+        bizStep:
+          type: string
+      additionalProperties: true
+    EpcisEventPage:
+      allOf:
+        - $ref: '#/components/schemas/Page'
+        - type: object
+          properties:
+            '@context':
+              $ref: '#/components/schemas/JsonLdContext'
+            passportId:
+              type: string
+              format: uri
+            withheldCount:
+              type: integer
+              minimum: 0
+              description: Events omitted because they exceed the caller's tier.
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/EpcisEvent'
+
+    # ---- Revisions, successors, status ---------------------------------------
+    RevisionReason:
+      type: string
+      enum: [correction, update, evidence-added, verification-added, succession-link, other]
+    RevisionRequest:
+      type: object
+      required: [passport, reason]
+      properties:
+        passport:
+          description: The complete new document (same `passportId`), JSON-LD or compact JWS.
+          oneOf:
+            - $ref: '#/components/schemas/PassportDocument'
+            - $ref: '#/components/schemas/CompactJws'
+        reason:
+          $ref: '#/components/schemas/RevisionReason'
+        changeSummary:
+          type: string
+          maxLength: 2000
+    Revision:
+      type: object
+      required: [revision, passportId, createdAt, reason, href]
+      properties:
+        revision:
+          type: integer
+          minimum: 1
+        passportId:
+          type: string
+          format: uri
+        supersedes:
+          type: [integer, 'null']
+          minimum: 1
+        createdAt:
+          type: string
+          format: date-time
+        createdBy:
+          type: string
+          description: Client identifier that appended the revision.
+        reason:
+          $ref: '#/components/schemas/RevisionReason'
+        changeSummary:
+          type: string
+        digest:
+          type: string
+          description: '`sha-256=:<base64>:` digest of the stored document (RFC 9530 syntax).'
+        etag:
+          type: string
+        href:
+          type: string
+          format: uri-reference
+    RevisionPage:
+      allOf:
+        - $ref: '#/components/schemas/Page'
+        - type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/Revision'
+    SuccessionRequest:
+      type: object
+      required: [lifecycleStatus, successor]
+      properties:
+        lifecycleStatus:
+          description: The lifecycle status of the successor subject (anything but `original`).
+          allOf:
+            - $ref: '#/components/schemas/LifecycleStatus'
+            - not:
+                const: original
+        successor:
+          description: The successor passport. Its `passportId` MUST differ from the predecessor's; the server adds the predecessor to `lifecycle.predecessorRefs`.
+          oneOf:
+            - $ref: '#/components/schemas/PassportDocument'
+            - $ref: '#/components/schemas/CompactJws'
+        transitionEventID:
+          type: string
+          format: uri
+          description: EPCIS event recording the transition (e.g. the TransformationEvent that consumed the predecessor).
+        effectiveAt:
+          type: string
+          format: date-time
+        reason:
+          type: string
+          maxLength: 2000
+    SuccessionResult:
+      type: object
+      required: [predecessor, successor, linkedAt]
+      properties:
+        predecessor:
+          $ref: '#/components/schemas/PassportLink'
+        successor:
+          $ref: '#/components/schemas/PassportLink'
+        lifecycleStatus:
+          $ref: '#/components/schemas/LifecycleStatus'
+        predecessorRevision:
+          type: integer
+          minimum: 1
+          description: The predecessor revision that added the successor to `lifecycle.successorRefs`.
+        linkedAt:
+          type: string
+          format: date-time
+    PassportLink:
+      type: object
+      required: [passportId, href]
+      properties:
+        passportId:
+          type: string
+          format: uri
+        href:
+          type: string
+          format: uri-reference
+    StatusUpdate:
+      type: object
+      required: [action, reason]
+      properties:
+        action:
+          type: string
+          enum: [revoke, suspend, reinstate]
+        reason:
+          type: string
+          enum: [recall, withdrawal, issued-in-error, compromised-key, under-investigation, other]
+        detail:
+          type: string
+          maxLength: 2000
+        effectiveAt:
+          type: string
+          format: date-time
+          description: Defaults to the time of the request. Future dates are not permitted.
+    PassportStatus:
+      type: object
+      required: [passportId, status, updatedAt]
+      properties:
+        passportId:
+          type: string
+          format: uri
+        status:
+          $ref: '#/components/schemas/CredentialState'
+        reason:
+          type: string
+        credentialStatus:
+          type: array
+          items:
+            $ref: '#/components/schemas/BitstringStatusListEntry'
+        updatedAt:
+          type: string
+          format: date-time
+
+    # ---- Verification ---------------------------------------------------------
+    CheckResult:
+      type: object
+      required: [check, level, result]
+      properties:
+        check:
+          type: string
+          enum:
+            - schema-valid
+            - identifiers-resolve
+            - recycled-fraction-arithmetic
+            - evidence-traceable
+            - genealogy-traversable
+            - mass-balance-reconciles
+            - proof-valid
+            - status-not-revoked
+            - time-anchor-valid
+        level:
+          $ref: '#/components/schemas/ConformanceLevel'
+        result:
+          type: string
+          enum: [pass, fail, skip]
+        optional:
+          type: boolean
+          default: false
+          description: Optional checks do not gate the level (e.g. time anchoring where not configured).
+        message:
+          type: string
+        details:
+          type: array
+          items:
+            type: object
+            properties:
+              pointer:
+                type: string
+              message:
+                type: string
+    VerificationReport:
+      type: object
+      required: [reportId, verifiedAt, result, achievedLevel, checks]
+      properties:
+        reportId:
+          type: string
+          format: uri
+        verifiedAt:
+          type: string
+          format: date-time
+        verifier:
+          type: object
+          properties:
+            name:
+              type: string
+            version:
+              type: string
+            schemaId:
+              type: string
+              format: uri
+        passportId:
+          type: string
+          format: uri
+        securing:
+          type: string
+          enum: [jose, data-integrity, none]
+        declaredLevel:
+          $ref: '#/components/schemas/ConformanceLevel'
+        achievedLevel:
+          description: Highest level whose non-optional checks all pass; `null` if Level 1 is not achieved.
+          type: [integer, 'null']
+          enum: [1, 2, 3, null]
+        result:
+          type: string
+          enum: [pass, fail]
+          description: '`pass` iff `achievedLevel` ≥ `declaredLevel` (or ≥ 1 where no level is declared).'
+        checks:
+          type: array
+          items:
+            $ref: '#/components/schemas/CheckResult'
+        warnings:
+          type: array
+          items:
+            type: string
+
+    # ---- Exchange ---------------------------------------------------------------
+    PartyRef:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        gs1:gln:
+          type: string
+          pattern: '^[0-9]{13}$'
+        endpoint:
+          type: string
+          format: uri
+          description: Base URL of the partner's implementation of this API.
+    ExchangeRequest:
+      type: object
+      required: [passport, recipient]
+      properties:
+        passport:
+          description: Passport to send — by local key/URL, or by `passportId`.
+          type: object
+          minProperties: 1
+          properties:
+            href:
+              type: string
+              format: uri-reference
+            passportId:
+              type: string
+              format: uri
+        recipient:
+          allOf:
+            - $ref: '#/components/schemas/PartyRef'
+            - required: [endpoint]
+        despatch:
+          type: object
+          properties:
+            sscc:
+              type: string
+              pattern: '^[0-9]{18}$'
+            despatchAdviceId:
+              type: string
+            shippingEventID:
+              type: string
+              format: uri
+            expectedDeliveryDate:
+              type: string
+              format: date
+        disclosureTier:
+          $ref: '#/components/schemas/AccessTier'
+        mediaType:
+          type: string
+          enum: [application/ld+json, application/vc+jwt]
+          default: application/vc+jwt
+        callbackUrl:
+          type: string
+          format: uri
+    ExchangeReceipt:
+      type: object
+      required: [exchangeId, status, passportId, recipient, createdAt]
+      properties:
+        exchangeId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [queued, delivered, acknowledged, rejected, failed]
+        passportId:
+          type: string
+          format: uri
+        recipient:
+          $ref: '#/components/schemas/PartyRef'
+        disclosureTier:
+          $ref: '#/components/schemas/AccessTier'
+        createdAt:
+          type: string
+          format: date-time
+        deliveredAt:
+          type: string
+          format: date-time
+        attempts:
+          type: integer
+          minimum: 0
+        acknowledgement:
+          $ref: '#/components/schemas/DeliveryAcknowledgement'
+        lastError:
+          $ref: '#/components/schemas/Problem'
+    DeliveryAcknowledgement:
+      type: object
+      required: [receivedAt, receivedBy, digest]
+      properties:
+        receivedAt:
+          type: string
+          format: date-time
+        receivedBy:
+          $ref: '#/components/schemas/PartyRef'
+        goodsInEventID:
+          type: string
+          format: uri
+          description: The recipient's EPCIS `receiving` ObjectEvent linking despatch to goods-in.
+        digest:
+          type: string
+          description: Digest of the document received (RFC 9530 syntax).
+        signature:
+          $ref: '#/components/schemas/CompactJws'
+
+    # ---- Trust material --------------------------------------------------------
+    Jwk:
+      type: object
+      required: [kty, crv, x, y, kid]
+      properties:
+        kty:
+          const: EC
+        crv:
+          const: P-256
+        x:
+          type: string
+        y:
+          type: string
+        kid:
+          type: string
+        use:
+          const: sig
+        alg:
+          const: ES256
+        ukmp:status:
+          type: string
+          enum: [current, retired, compromised]
+        ukmp:validFrom:
+          type: string
+          format: date-time
+        ukmp:validUntil:
+          type: string
+          format: date-time
+    JwkSet:
+      type: object
+      required: [keys]
+      properties:
+        keys:
+          type: array
+          items:
+            $ref: '#/components/schemas/Jwk'
+    BitstringStatusListCredential:
+      type: object
+      required: ['@context', type, issuer, credentialSubject]
+      properties:
+        '@context':
+          $ref: '#/components/schemas/JsonLdContext'
+        id:
+          type: string
+          format: uri
+        type:
+          type: array
+          allOf:
+            - contains:
+                const: VerifiableCredential
+            - contains:
+                const: BitstringStatusListCredential
+          items:
+            type: string
+        issuer:
+          type: string
+          format: uri
+        validFrom:
+          type: string
+          format: date-time
+        validUntil:
+          type: string
+          format: date-time
+        credentialSubject:
+          type: object
+          required: [type, statusPurpose, encodedList]
+          properties:
+            id:
+              type: string
+              format: uri
+            type:
+              const: BitstringStatusList
+            statusPurpose:
+              type: string
+              enum: [revocation, suspension]
+            encodedList:
+              type: string
+              pattern: '^u[A-Za-z0-9_-]+$'
+            ttl:
+              type: integer
+              minimum: 0
+
+    # ---- Webhooks ---------------------------------------------------------------
+    WebhookEvent:
+      type: object
+      required: [id, type, occurredAt, source, data]
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [passport.revised, passport.revoked, passport.succeeded, exchange.received]
+        occurredAt:
+          type: string
+          format: date-time
+        source:
+          type: string
+          format: uri
+          description: Base URL of the sending implementation (its keys are at `/.well-known/ukmp/keys` on that origin).
+        data:
+          type: object
+    PassportRevisedEvent:
+      allOf:
+        - $ref: '#/components/schemas/WebhookEvent'
+        - type: object
+          properties:
+            type:
+              const: passport.revised
+            data:
+              $ref: '#/components/schemas/Revision'
+    PassportRevokedEvent:
+      allOf:
+        - $ref: '#/components/schemas/WebhookEvent'
+        - type: object
+          properties:
+            type:
+              const: passport.revoked
+            data:
+              $ref: '#/components/schemas/PassportStatus'
+    PassportSucceededEvent:
+      allOf:
+        - $ref: '#/components/schemas/WebhookEvent'
+        - type: object
+          properties:
+            type:
+              const: passport.succeeded
+            data:
+              $ref: '#/components/schemas/SuccessionResult'
+    ExchangeReceivedEvent:
+      allOf:
+        - $ref: '#/components/schemas/WebhookEvent'
+        - type: object
+          properties:
+            type:
+              const: exchange.received
+            data:
+              type: object
+              required: [exchangeId, sender, passport]
+              properties:
+                exchangeId:
+                  type: string
+                  format: uuid
+                sender:
+                  $ref: '#/components/schemas/PartyRef'
+                despatch:
+                  type: object
+                  properties:
+                    sscc:
+                      type: string
+                    despatchAdviceId:
+                      type: string
+                    shippingEventID:
+                      type: string
+                passport:
+                  description: The delivered passport (compact JWS or JSON-LD).
+                  oneOf:
+                    - $ref: '#/components/schemas/CompactJws'
+                    - $ref: '#/components/schemas/PassportView'
+
+    # ---- Errors -----------------------------------------------------------------
+    Problem:
+      description: RFC 9457 problem details.
+      type: object
+      required: [type, title, status]
+      properties:
+        type:
+          type: string
+          format: uri-reference
+          default: about:blank
+        title:
+          type: string
+        status:
+          type: integer
+          minimum: 100
+          maximum: 599
+        detail:
+          type: string
+        instance:
+          type: string
+          format: uri-reference
+        errors:
+          type: array
+          description: Field-level errors; `pointer` is a JSON Pointer into the request body, or `#/query/<name>` / `#/header/<name>` for parameters.
+          items:
+            type: object
+            required: [message]
+            properties:
+              pointer:
+                type: string
+              message:
+                type: string
+      additionalProperties: true
+
+  examples:
+    PassportCredentialHdpe:
+      summary: Level 3 — VC-enveloped recycled HDPE pellet passport (examples/example_passport.jsonld)
+      description: The proof value is illustrative, not a real signature.
+      value: &hdpeCredential {
+        "@context": [
+          "https://www.w3.org/ns/credentials/v2",
+          "https://ref.gs1.org/standards/epcis/epcis-context.jsonld",
+          "https://schema.materialspassport.org.uk/v0.1/context.jsonld",
+          "https://schema.materialspassport.org.uk/v0.1/plastics-context.jsonld"
+        ],
+        "id": "https://passports.example-recycler.co.uk/passports/urn:uuid:8f2b7c1e-4d3a-4f6b-9e2d-1a5c7b9d0e42",
+        "type": ["VerifiableCredential", "MaterialPassportCredential"],
+        "issuer": {
+          "id": "https://passports.example-recycler.co.uk/issuer",
+          "name": "Example Recycler Ltd",
+          "gs1:gln": "5060123456789"
+        },
+        "validFrom": "2026-08-03T14:22:00Z",
+        "credentialStatus": {
+          "id": "https://passports.example-recycler.co.uk/status/3#94567",
+          "type": "BitstringStatusListEntry",
+          "statusPurpose": "revocation",
+          "statusListIndex": "94567",
+          "statusListCredential": "https://passports.example-recycler.co.uk/status/3"
+        },
+        "credentialSubject": {
+          "type": "ukmp:MaterialPassport",
+          "passportId": "https://id.gs1.org/01/05060987654321/10/B26-0803-HD",
+          "subjectType": "MaterialBatch",
+          "gs1:lgtin": "05060987654321.B26-0803-HD",
+          "sectorProfile": "https://schema.materialspassport.org.uk/v0.1/profiles/plastics",
+          "conformanceLevel": 3,
+          "issuerParty": { "name": "Example Recycler Ltd", "gs1:gln": "5060123456789", "role": "reprocessor" },
+          "issueDate": "2026-08-03",
+          "lastUpdated": "2026-08-03T14:22:00Z",
+          "description": "1,000 kg post-consumer recycled HDPE pellet, natural, extrusion grade",
+          "composition": {
+            "materialFamily": "polymer",
+            "ukmp-plastics:polymerType": "HDPE",
+            "ukmp-plastics:form": "pellet",
+            "ukmp-plastics:colour": "natural",
+            "ukmp-plastics:foodContactGrade": false,
+            "substances": [
+              { "name": "High-density polyethylene", "massFraction": 0.985 },
+              { "name": "Process stabiliser package", "massFraction": 0.012, "svhcFlag": false },
+              { "name": "Residual contamination (non-target polymer)", "massFraction": 0.003 }
+            ]
+          },
+          "recycledContent": {
+            "preConsumerFraction": 0.0,
+            "postConsumerFraction": 0.87,
+            "totalRecycledFraction": 0.87,
+            "calculationMethod": "controlled-blending",
+            "chainOfCustodyModel": "segregated",
+            "evidenceType": "epcis-event-chain",
+            "evidenceRefs": [
+              "urn:uuid:e1-intake-2026-07-28",
+              "urn:uuid:e4-transform-shred-2026-07-30",
+              "urn:uuid:e6-transform-extrude-2026-08-01",
+              "urn:uuid:e8-blend-2026-08-02"
+            ],
+            "verificationStatus": "evidence-linked"
+          },
+          "processingHistory": {
+            "epcisEvents": [
+              { "eventID": "urn:uuid:e1-intake-2026-07-28", "type": "ObjectEvent", "bizStep": "receiving", "eventTime": "2026-07-28T08:05:00Z", "inputNote": "PC HDPE bales, 1,240 kg, supplier GLN 5060555000018" },
+              { "eventID": "urn:uuid:e2-inspect-2026-07-28", "type": "ObjectEvent", "bizStep": "inspecting", "eventTime": "2026-07-28T09:40:00Z", "ukmp:verificationExtension": { "instrument": "NIR", "measuredPolymerClass": "HDPE", "contaminationLevel": 0.041 } },
+              { "eventID": "urn:uuid:e3-sort-2026-07-29", "type": "ObjectEvent", "bizStep": "inspecting", "eventTime": "2026-07-29T11:00:00Z" },
+              { "eventID": "urn:uuid:e4-transform-shred-2026-07-30", "type": "TransformationEvent", "bizStep": "transforming", "eventTime": "2026-07-30T10:15:00Z", "ukmp:massBalanceDelta": { "inputKg": 1240, "outputKg": 1176, "wasteKg": 64 } },
+              { "eventID": "urn:uuid:e5-wash-2026-07-31", "type": "TransformationEvent", "bizStep": "transforming", "eventTime": "2026-07-31T09:00:00Z", "ukmp:massBalanceDelta": { "inputKg": 1176, "outputKg": 1128, "wasteKg": 48 } },
+              { "eventID": "urn:uuid:e6-transform-extrude-2026-08-01", "type": "TransformationEvent", "bizStep": "transforming", "eventTime": "2026-08-01T13:30:00Z", "ukmp:massBalanceDelta": { "inputKg": 1128, "outputKg": 1102, "wasteKg": 26 } },
+              { "eventID": "urn:uuid:e8-blend-2026-08-02", "type": "TransformationEvent", "bizStep": "transforming", "eventTime": "2026-08-02T10:45:00Z", "note": "Blend: 890 kg PCR + 130 kg virgin carrier", "ukmp:massBalanceDelta": { "inputKg": 1020, "outputKg": 1004, "wasteKg": 16 } },
+              { "eventID": "urn:uuid:e9-pack-2026-08-02", "type": "AggregationEvent", "bizStep": "packing", "eventTime": "2026-08-02T15:20:00Z", "note": "40 × 25 kg bags, SSCC 350601234500000021" },
+              { "eventID": "urn:uuid:e10-ship-2026-08-03", "type": "ObjectEvent", "bizStep": "shipping", "eventTime": "2026-08-03T08:10:00Z", "destinationGln": "5060777000023" }
+            ],
+            "traversable": true
+          },
+          "environmentalFootprint": {
+            "carbonFootprintKgCo2ePerKg": 0.42,
+            "assessmentBoundary": "cradle-to-gate",
+            "methodology": "ISO 14067",
+            "dataQualityRating": 3,
+            "primaryDataFraction": 0.78,
+            "energySource": { "gridKwh": 412, "onSiteRenewablesKwh": 96 },
+            "virginBaselineKgCo2ePerKg": { "value": 2.12, "unit": "kgCO2e/kg", "assessmentBoundary": "cradle-to-gate", "source": "Illustrative, non-normative: WRAP-derived UK mixed-polymer net-avoided figure (1.7 kg CO2e/kg, per project impact model) plus this batch's own 0.42 footprint" },
+            "netAvoidedKgCo2ePerKg": 1.7
+          },
+          "ukRegulatory": {
+            "ewcCode": "19 12 04",
+            "endOfWasteStatus": { "achieved": true, "basis": "individual-assessment", "atEvent": "urn:uuid:e6-transform-extrude-2026-08-01" },
+            "wasteHierarchyPosition": "recycling",
+            "recoveryCode": "R3",
+            "pptStatus": { "inScope": true, "recycledFractionForPpt": 0.87, "evidenceRef": "urn:uuid:e8-blend-2026-08-02" },
+            "eprCategory": "plastic",
+            "permits": [{ "type": "environmental-permit", "ref": "EPR/AB1234CD" }],
+            "euMapping": { "esprCategory": "polymers-intermediate", "ppwrRecyclabilityGrade": "B" }
+          }
+        },
+        "proof": {
+          "type": "DataIntegrityProof",
+          "cryptosuite": "ecdsa-jcs-2019",
+          "created": "2026-08-03T14:22:04Z",
+          "verificationMethod": "https://passports.example-recycler.co.uk/.well-known/ukmp/keys#2026-1",
+          "proofPurpose": "assertionMethod",
+          "proofValue": "z3FXQjecWufY46...ILLUSTRATIVE-NOT-A-REAL-SIGNATURE...9vKpW2a"
+        }
+      }
+    PassportBareLevel1:
+      summary: Level 1 — bare self-declared PP regrind passport (examples/example_level1_minimal.jsonld)
+      value: {
+        "@context": ["https://schema.materialspassport.org.uk/v0.1/context.jsonld"],
+        "type": "ukmp:MaterialPassport",
+        "passportId": "https://passports.example-sme.co.uk/passports/urn:uuid:2c9d4a10-77b1-4e5f-8c33-6f0a2d9b1e57",
+        "subjectType": "MaterialBatch",
+        "alternativeId": { "scheme": "internal-batch-ref", "value": "PP-2026-0142" },
+        "conformanceLevel": 1,
+        "issuerParty": { "name": "Example SME Reprocessing Ltd", "role": "reprocessor" },
+        "issueDate": "2026-08-10",
+        "description": "500 kg mixed post-consumer PP regrind, grey, injection-moulding grade (self-declared)",
+        "composition": {
+          "materialFamily": "polymer",
+          "substances": [
+            { "name": "Polypropylene", "massFraction": 0.97 },
+            { "name": "Residual contamination (non-target polymer)", "massFraction": 0.03 }
+          ]
+        },
+        "recycledContent": {
+          "preConsumerFraction": 0.05,
+          "postConsumerFraction": 0.95,
+          "totalRecycledFraction": 1.0,
+          "calculationMethod": "declared",
+          "evidenceType": "supplier-declaration",
+          "evidenceRefs": ["https://passports.example-sme.co.uk/declarations/PP-2026-0142.pdf"],
+          "verificationStatus": "self-declared"
+        }
+      }
+    PassportRedactedPublic:
+      summary: Public-tier view — substances and event chain withheld, proof stripped
+      description: Served with `UKMP-Withheld-Paths` `/composition/substances,/processingHistory`.
+      value: &redactedPublic {
+        "@context": [
+          "https://www.w3.org/ns/credentials/v2",
+          "https://schema.materialspassport.org.uk/v0.1/context.jsonld",
+          "https://schema.materialspassport.org.uk/v0.1/plastics-context.jsonld"
+        ],
+        "ukmp:redaction": { "tier": "public", "withheldPaths": ["/composition/substances", "/processingHistory"] },
+        "id": "https://passports.example-recycler.co.uk/passports/urn:uuid:8f2b7c1e-4d3a-4f6b-9e2d-1a5c7b9d0e42",
+        "type": ["VerifiableCredential", "MaterialPassportCredential"],
+        "issuer": { "id": "https://passports.example-recycler.co.uk/issuer", "name": "Example Recycler Ltd" },
+        "validFrom": "2026-08-03T14:22:00Z",
+        "credentialStatus": {
+          "id": "https://passports.example-recycler.co.uk/status/3#94567",
+          "type": "BitstringStatusListEntry",
+          "statusPurpose": "revocation",
+          "statusListIndex": "94567",
+          "statusListCredential": "https://passports.example-recycler.co.uk/status/3"
+        },
+        "credentialSubject": {
+          "type": "ukmp:MaterialPassport",
+          "passportId": "https://id.gs1.org/01/05060987654321/10/B26-0803-HD",
+          "subjectType": "MaterialBatch",
+          "gs1:lgtin": "05060987654321.B26-0803-HD",
+          "conformanceLevel": 3,
+          "issuerParty": { "name": "Example Recycler Ltd", "gs1:gln": "5060123456789", "role": "reprocessor" },
+          "issueDate": "2026-08-03",
+          "composition": { "materialFamily": "polymer", "ukmp-plastics:polymerType": "HDPE" },
+          "recycledContent": {
+            "postConsumerFraction": 0.87,
+            "totalRecycledFraction": 0.87,
+            "calculationMethod": "controlled-blending",
+            "evidenceType": "epcis-event-chain",
+            "verificationStatus": "evidence-linked"
+          }
+        }
+      }
+    PassportJws:
+      summary: JOSE-enveloped credential (compact JWS, payload abbreviated; signature illustrative)
+      value: eyJhbGciOiJFUzI1NiIsInR5cCI6InZjK2p3dCIsImN0eSI6InZjIiwia2lkIjoiaHR0cHM6Ly9wYXNzcG9ydHMuZXhhbXBsZS1yZWN5Y2xlci5jby51ay8ud2VsbC1rbm93bi91a21wL2tleXMjMjAyNi0xIn0.eyJAY29udGV4dCI6WyJodHRwczovL3d3dy53My5vcmcvbnMvY3JlZGVudGlhbHMvdjIiLCJodHRwczovL3NjaGVtYS5tYXRlcmlhbHNwYXNzcG9ydC5vcmcudWsvdjAuMS9jb250ZXh0Lmpzb25sZCJdLCJpZCI6Imh0dHBzOi8vcGFzc3BvcnRzLmV4YW1wbGUtcmVjeWNsZXIuY28udWsvcGFzc3BvcnRzL3Vybjp1dWlkOjhmMmI3YzFlLTRkM2EtNGY2Yi05ZTJkLTFhNWM3YjlkMGU0MiIsInR5cGUiOlsiVmVyaWZpYWJsZUNyZWRlbnRpYWwiLCJNYXRlcmlhbFBhc3Nwb3J0Q3JlZGVudGlhbCJdLCJpc3N1ZXIiOiJodHRwczovL3Bhc3Nwb3J0cy5leGFtcGxlLXJlY3ljbGVyLmNvLnVrL2lzc3VlciIsInZhbGlkRnJvbSI6IjIwMjYtMDgtMDNUMTQ6MjI6MDBaIiwiY3JlZGVudGlhbFN1YmplY3QiOnsidHlwZSI6InVrbXA6TWF0ZXJpYWxQYXNzcG9ydCIsInBhc3Nwb3J0SWQiOiJodHRwczovL2lkLmdzMS5vcmcvMDEvMDUwNjA5ODc2NTQzMjEvMTAvQjI2LTA4MDMtSEQiLCJzdWJqZWN0VHlwZSI6Ik1hdGVyaWFsQmF0Y2gifX0.SUxMVVNUUkFUSVZFLU5PVC1BLVJFQUwtU0lHTkFUVVJFLUlMTFVTVFJBVElWRS1OT1QtQS1SRUFMLVNJRw
+    StatusListJws:
+      summary: JOSE-secured status list credential (signature illustrative)
+      value: eyJhbGciOiJFUzI1NiIsInR5cCI6InZjK2p3dCIsImtpZCI6Imh0dHBzOi8vcGFzc3BvcnRzLmV4YW1wbGUtcmVjeWNsZXIuY28udWsvLndlbGwta25vd24vdWttcC9rZXlzIzIwMjYtMSJ9.eyJAY29udGV4dCI6WyJodHRwczovL3d3dy53My5vcmcvbnMvY3JlZGVudGlhbHMvdjIiXSwiaWQiOiJodHRwczovL3Bhc3Nwb3J0cy5leGFtcGxlLXJlY3ljbGVyLmNvLnVrL3N0YXR1cy8zIiwidHlwZSI6WyJWZXJpZmlhYmxlQ3JlZGVudGlhbCIsIkJpdHN0cmluZ1N0YXR1c0xpc3RDcmVkZW50aWFsIl0sImlzc3VlciI6Imh0dHBzOi8vcGFzc3BvcnRzLmV4YW1wbGUtcmVjeWNsZXIuY28udWsvaXNzdWVyIiwidmFsaWRGcm9tIjoiMjAyNi0xMS0wMVQwMDowMDowMFoiLCJjcmVkZW50aWFsU3ViamVjdCI6eyJpZCI6Imh0dHBzOi8vcGFzc3BvcnRzLmV4YW1wbGUtcmVjeWNsZXIuY28udWsvc3RhdHVzLzMjbGlzdCIsInR5cGUiOiJCaXRzdHJpbmdTdGF0dXNMaXN0Iiwic3RhdHVzUHVycG9zZSI6InJldm9jYXRpb24iLCJlbmNvZGVkTGlzdCI6InVINHNJQUFBQUFBQUFBLTNCTVFFQUFBRENvUFZQYlF3Zm9BQUFBQUFBQUFBQUFBQUFBQUFBQUlDM0FZYlNWS3NBUUFBQSJ9fQ.SUxMVVNUUkFUSVZFLU5PVC1BLVJFQUwtU0lHTkFUVVJFLUlMTFVTVFJBVElWRS1OT1QtQS1SRUFMLVNJRw
+    PassportSummaryPage:
+      summary: Passports for one GTIN
+      value:
+        limit: 50
+        nextCursor: null
+        items:
+          - passportKey: urn:uuid:8f2b7c1e-4d3a-4f6b-9e2d-1a5c7b9d0e42
+            passportId: https://id.gs1.org/01/05060987654321/10/B26-0803-HD
+            href: /ukmp/v1/passports/urn:uuid:8f2b7c1e-4d3a-4f6b-9e2d-1a5c7b9d0e42
+            subjectType: MaterialBatch
+            identityLevel: batch
+            gs1:lgtin: 05060987654321.B26-0803-HD
+            issueDate: '2026-08-03'
+            lastUpdated: '2026-08-03T14:22:00Z'
+            conformanceLevel: 3
+            lifecycleStatus: original
+            credentialStatus: active
+            currentRevision: 1
+    RevisionRequest:
+      summary: Correct the stabiliser mass fraction
+      value:
+        reason: correction
+        changeSummary: Stabiliser package mass fraction corrected from lab report LR-2026-0911.
+        passport: *hdpeCredential
+    Revision:
+      summary: Revision 2 appended
+      value: &revision2
+        revision: 2
+        passportId: https://id.gs1.org/01/05060987654321/10/B26-0803-HD
+        supersedes: 1
+        createdAt: '2026-09-12T09:30:00Z'
+        createdBy: client:example-recycler-erp
+        reason: correction
+        changeSummary: Stabiliser package mass fraction corrected from lab report LR-2026-0911.
+        digest: 'sha-256=:X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=:'
+        etag: '"rev-2-sha256-9f2c41"'
+        href: /ukmp/v1/passports/urn:uuid:8f2b7c1e-4d3a-4f6b-9e2d-1a5c7b9d0e42?revision=2
+    RevisionPage:
+      summary: Two revisions, newest first
+      value:
+        limit: 50
+        nextCursor: null
+        items:
+          - revision: 2
+            passportId: https://id.gs1.org/01/05060987654321/10/B26-0803-HD
+            supersedes: 1
+            createdAt: '2026-09-12T09:30:00Z'
+            reason: correction
+            href: /ukmp/v1/passports/urn:uuid:8f2b7c1e-4d3a-4f6b-9e2d-1a5c7b9d0e42?revision=2
+          - revision: 1
+            passportId: https://id.gs1.org/01/05060987654321/10/B26-0803-HD
+            supersedes: null
+            createdAt: '2026-08-03T14:22:00Z'
+            reason: other
+            changeSummary: Initial issue.
+            href: /ukmp/v1/passports/urn:uuid:8f2b7c1e-4d3a-4f6b-9e2d-1a5c7b9d0e42?revision=1
+    SuccessionRequest:
+      summary: PP regrind recycled into a compounded pellet batch
+      value:
+        lifecycleStatus: recycled
+        transitionEventID: urn:uuid:e12-compound-2026-09-02
+        effectiveAt: '2026-09-02T11:00:00Z'
+        reason: Regrind batch PP-2026-0142 consumed in compounding run CR-0902.
+        successor: {
+          "@context": ["https://schema.materialspassport.org.uk/v0.1/context.jsonld"],
+          "type": "ukmp:MaterialPassport",
+          "passportId": "https://passports.example-sme.co.uk/passports/urn:uuid:5e1a8b2c-0f3d-4a6e-9b71-2c4d6e8f0a13",
+          "subjectType": "MaterialBatch",
+          "alternativeId": { "scheme": "internal-batch-ref", "value": "CP-2026-0902" },
+          "conformanceLevel": 1,
+          "issuerParty": { "name": "Example SME Reprocessing Ltd", "role": "compounder" },
+          "issueDate": "2026-09-02",
+          "composition": {
+            "materialFamily": "polymer",
+            "substances": [
+              { "name": "Polypropylene", "massFraction": 0.98 },
+              { "name": "Process stabiliser package", "massFraction": 0.02 }
+            ]
+          },
+          "recycledContent": {
+            "postConsumerFraction": 0.95,
+            "totalRecycledFraction": 0.95,
+            "calculationMethod": "declared",
+            "evidenceType": "supplier-declaration",
+            "verificationStatus": "self-declared"
+          }
+        }
+    SuccessionResult:
+      summary: Predecessor and successor linked
+      value: &successionResult
+        predecessor:
+          passportId: https://passports.example-sme.co.uk/passports/urn:uuid:2c9d4a10-77b1-4e5f-8c33-6f0a2d9b1e57
+          href: /ukmp/v1/passports/urn:uuid:2c9d4a10-77b1-4e5f-8c33-6f0a2d9b1e57
+        successor:
+          passportId: https://passports.example-sme.co.uk/passports/urn:uuid:5e1a8b2c-0f3d-4a6e-9b71-2c4d6e8f0a13
+          href: /ukmp/v1/passports/urn:uuid:5e1a8b2c-0f3d-4a6e-9b71-2c4d6e8f0a13
+        lifecycleStatus: recycled
+        predecessorRevision: 2
+        linkedAt: '2026-09-02T11:00:07Z'
+    StatusUpdateRevoke:
+      summary: Recall a batch
+      value:
+        action: revoke
+        reason: recall
+        detail: Contamination above specification found in retained sample RS-0803-4.
+        effectiveAt: '2026-09-15T08:00:00Z'
+    PassportStatusRevoked:
+      summary: Revoked
+      value: &statusRevoked
+        passportId: https://id.gs1.org/01/05060987654321/10/B26-0803-HD
+        status: revoked
+        reason: recall
+        credentialStatus:
+          - id: https://passports.example-recycler.co.uk/status/3#94567
+            type: BitstringStatusListEntry
+            statusPurpose: revocation
+            statusListIndex: '94567'
+            statusListCredential: https://passports.example-recycler.co.uk/status/3
+        updatedAt: '2026-09-15T08:00:02Z'
+    EpcisEventPage:
+      summary: Upstream events for batch B26-0803-HD (first page)
+      value:
+        '@context': [https://ref.gs1.org/standards/epcis/epcis-context.jsonld, https://schema.materialspassport.org.uk/v0.1/context.jsonld]
+        passportId: https://id.gs1.org/01/05060987654321/10/B26-0803-HD
+        limit: 3
+        nextCursor: eyJlIjoidXJuOnV1aWQ6ZTMtc29ydC0yMDI2LTA3LTI5In0
+        withheldCount: 0
+        items:
+          - eventID: urn:uuid:e1-intake-2026-07-28
+            type: ObjectEvent
+            bizStep: receiving
+            eventTime: '2026-07-28T08:05:00Z'
+          - eventID: urn:uuid:e2-inspect-2026-07-28
+            type: ObjectEvent
+            bizStep: inspecting
+            eventTime: '2026-07-28T09:40:00Z'
+            ukmp:verificationExtension: { instrument: NIR, measuredPolymerClass: HDPE, contaminationLevel: 0.041 }
+          - eventID: urn:uuid:e4-transform-shred-2026-07-30
+            type: TransformationEvent
+            bizStep: transforming
+            eventTime: '2026-07-30T10:15:00Z'
+            ukmp:massBalanceDelta: { inputKg: 1240, outputKg: 1176, wasteKg: 64 }
+    VerificationReportLevel2:
+      summary: Declares Level 3, achieves Level 2 (illustrative proof does not verify)
+      value:
+        reportId: urn:uuid:7d3e9f10-2b4c-4a8e-91f2-6c0b5d7e3a21
+        verifiedAt: '2026-11-02T10:15:00Z'
+        verifier: { name: ukmp-reference-verifier, version: 1.0.0, schemaId: 'https://schema.materialspassport.org.uk/v0.1/material_passport.schema.json' }
+        passportId: https://id.gs1.org/01/05060987654321/10/B26-0803-HD
+        securing: data-integrity
+        declaredLevel: 3
+        achievedLevel: 2
+        result: fail
+        checks:
+          - { check: schema-valid, level: 1, result: pass }
+          - { check: identifiers-resolve, level: 1, result: pass, message: GS1 Digital Link and GLN resolved. }
+          - { check: recycled-fraction-arithmetic, level: 1, result: pass, message: 0.0 + 0.87 = 0.87 }
+          - { check: evidence-traceable, level: 2, result: pass, message: 4/4 evidenceRefs resolve to events in processingHistory. }
+          - { check: genealogy-traversable, level: 2, result: pass }
+          - { check: mass-balance-reconciles, level: 2, result: pass, message: 4 TransformationEvents reconcile within 0.5 kg. }
+          - check: proof-valid
+            level: 3
+            result: fail
+            message: ecdsa-jcs-2019 signature does not verify against key 2026-1.
+            details: [{ pointer: /proof/proofValue, message: invalid multibase signature encoding }]
+          - { check: status-not-revoked, level: 3, result: pass, message: Bit 94567 of status list 3 is 0. }
+          - { check: time-anchor-valid, level: 3, result: skip, optional: true, message: No anchoring receipt in evidenceRefs. }
+        warnings: []
+    VerificationReportLevel1:
+      summary: Self-declared bare passport achieves Level 1
+      value:
+        reportId: urn:uuid:3a9c1d55-6e7f-4b20-8c14-0f2e4d6a8b97
+        verifiedAt: '2026-11-02T10:16:00Z'
+        passportId: https://passports.example-sme.co.uk/passports/urn:uuid:2c9d4a10-77b1-4e5f-8c33-6f0a2d9b1e57
+        securing: none
+        declaredLevel: 1
+        achievedLevel: 1
+        result: pass
+        checks:
+          - { check: schema-valid, level: 1, result: pass }
+          - { check: identifiers-resolve, level: 1, result: pass, message: alternativeId scheme 'internal-batch-ref' is not network-resolvable; accepted as declared. }
+          - { check: recycled-fraction-arithmetic, level: 1, result: pass, message: 0.05 + 0.95 = 1.0 }
+          - { check: evidence-traceable, level: 2, result: fail, message: evidenceType is supplier-declaration, not epcis-event-chain. }
+          - { check: genealogy-traversable, level: 2, result: skip }
+          - { check: mass-balance-reconciles, level: 2, result: skip }
+          - { check: proof-valid, level: 3, result: skip, message: No proof. }
+          - { check: status-not-revoked, level: 3, result: skip, message: No credentialStatus. }
+        warnings: []
+    ExchangeRequest:
+      summary: Despatch HDPE pellet to a converter
+      value:
+        passport: { href: '/ukmp/v1/passports/urn:uuid:8f2b7c1e-4d3a-4f6b-9e2d-1a5c7b9d0e42' }
+        recipient: { name: Example Converter Ltd, 'gs1:gln': '5060777000023', endpoint: 'https://ukmp.example-converter.co.uk/ukmp/v1' }
+        despatch:
+          sscc: '350601234500000021'
+          despatchAdviceId: DA-2026-08-0412
+          shippingEventID: urn:uuid:e10-ship-2026-08-03
+          expectedDeliveryDate: '2026-08-05'
+        disclosureTier: legitimate-interest
+        mediaType: application/ld+json
+        callbackUrl: https://erp.example-recycler.co.uk/hooks/ukmp
+    ExchangeReceiptQueued:
+      summary: Queued for delivery
+      value:
+        exchangeId: 0b6f3c2a-91d4-4e8a-b7f0-5d2c9e1a4b36
+        status: queued
+        passportId: https://id.gs1.org/01/05060987654321/10/B26-0803-HD
+        recipient: { name: Example Converter Ltd, 'gs1:gln': '5060777000023', endpoint: 'https://ukmp.example-converter.co.uk/ukmp/v1' }
+        disclosureTier: legitimate-interest
+        createdAt: '2026-08-03T08:12:00Z'
+        attempts: 0
+    ExchangeReceiptAcknowledged:
+      summary: Delivered and acknowledged at goods-in
+      value:
+        exchangeId: 0b6f3c2a-91d4-4e8a-b7f0-5d2c9e1a4b36
+        status: acknowledged
+        passportId: https://id.gs1.org/01/05060987654321/10/B26-0803-HD
+        recipient: { name: Example Converter Ltd, 'gs1:gln': '5060777000023', endpoint: 'https://ukmp.example-converter.co.uk/ukmp/v1' }
+        disclosureTier: legitimate-interest
+        createdAt: '2026-08-03T08:12:00Z'
+        deliveredAt: '2026-08-03T08:12:04Z'
+        attempts: 1
+        acknowledgement: &deliveryAck
+          receivedAt: '2026-08-05T07:41:00Z'
+          receivedBy: { name: Example Converter Ltd, 'gs1:gln': '5060777000023' }
+          goodsInEventID: urn:uuid:c1-receive-2026-08-05
+          digest: 'sha-256=:X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=:'
+          signature: eyJhbGciOiJFUzI1NiIsImtpZCI6IjIwMjYtYyJ9.eyJyZWNlaXB0IjoidXJuOnV1aWQ6YzEtcmVjZWl2ZS0yMDI2LTA4LTA1In0.SUxMVVNUUkFUSVZFLVNJRw
+    DeliveryAcknowledgement:
+      summary: Recipient's signed receipt
+      value: *deliveryAck
+    JwkSet:
+      summary: Current key plus a retired key (coordinates illustrative)
+      value:
+        keys:
+          - kty: EC
+            crv: P-256
+            kid: https://passports.example-recycler.co.uk/.well-known/ukmp/keys#2026-1
+            use: sig
+            alg: ES256
+            x: QewZXlMKRqU0dkE4ycx53QiOGmNH-trjxlo3CMGOnh4
+            y: NE7lzes1uwq0oBP-8GrgzrC0SFh2lGG4V55Kj0ja66w
+            ukmp:status: current
+            ukmp:validFrom: '2026-01-01T00:00:00Z'
+          - kty: EC
+            crv: P-256
+            kid: https://passports.example-recycler.co.uk/.well-known/ukmp/keys#2025-1
+            use: sig
+            alg: ES256
+            x: Z6NDXbXzjUkG-DXYkSU2lza--llr4KfJsXiUG9TX0zM
+            y: npn2evtb2EPVZB1Bsn7v8LS3Ex8gj5-rhWd_P8PaccI
+            ukmp:status: retired
+            ukmp:validFrom: '2025-01-01T00:00:00Z'
+            ukmp:validUntil: '2025-12-31T23:59:59Z'
+    StatusListCredential:
+      summary: Revocation status list 3 (encodedList truncated)
+      value:
+        '@context': [https://www.w3.org/ns/credentials/v2]
+        id: https://passports.example-recycler.co.uk/status/3
+        type: [VerifiableCredential, BitstringStatusListCredential]
+        issuer: https://passports.example-recycler.co.uk/issuer
+        validFrom: '2026-11-01T00:00:00Z'
+        validUntil: '2026-11-08T00:00:00Z'
+        credentialSubject:
+          id: https://passports.example-recycler.co.uk/status/3#list
+          type: BitstringStatusList
+          statusPurpose: revocation
+          encodedList: uH4sIAAAAAAAAA-3BMQEAAADCoPVPbQwfoAAAAAAAAAAAAAAAAAAAAIC3AYbSVKsAQAAA
+          ttl: 300000
+    WebhookPassportRevised:
+      value:
+        id: 2f8d6a4e-1c3b-4e5f-a7d9-0b2c4e6f8a10
+        type: passport.revised
+        occurredAt: '2026-09-12T09:30:01Z'
+        source: https://passports.example-recycler.co.uk/ukmp/v1
+        data: *revision2
+    WebhookPassportRevoked:
+      value:
+        id: 5a7c9e1b-3d5f-4a2c-8e0b-6d4f2a8c0e13
+        type: passport.revoked
+        occurredAt: '2026-09-15T08:00:02Z'
+        source: https://passports.example-recycler.co.uk/ukmp/v1
+        data: *statusRevoked
+    WebhookPassportSucceeded:
+      value:
+        id: 9c1e3a5b-7d9f-4b1d-a3c5-e7f9b1d3f5a7
+        type: passport.succeeded
+        occurredAt: '2026-09-02T11:00:07Z'
+        source: https://passports.example-sme.co.uk/ukmp/v1
+        data: *successionResult
+    WebhookExchangeReceived:
+      value:
+        id: 4e6a8c0d-2f4b-4d6f-8a0c-2e4a6c8e0b25
+        type: exchange.received
+        occurredAt: '2026-08-03T08:12:03Z'
+        source: https://passports.example-recycler.co.uk/ukmp/v1
+        data:
+          exchangeId: 0b6f3c2a-91d4-4e8a-b7f0-5d2c9e1a4b36
+          sender: { name: Example Recycler Ltd, 'gs1:gln': '5060123456789', endpoint: 'https://passports.example-recycler.co.uk/ukmp/v1' }
+          despatch: { sscc: '350601234500000021', despatchAdviceId: DA-2026-08-0412, shippingEventID: 'urn:uuid:e10-ship-2026-08-03' }
+          passport: *redactedPublic

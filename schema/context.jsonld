@@ -32,8 +32,84 @@
       }
     },
 
+    "passportId": { "@id": "ukmp:passportId", "@type": "@id" },
+    "subjectType": "ukmp:subjectType",
+    "alternativeId": { "@id": "ukmp:alternativeId", "@type": "@id" },
+    "sectorProfile": { "@id": "ukmp:sectorProfile", "@type": "@id" },
+    "conformanceLevel": { "@id": "ukmp:conformanceLevel", "@type": "xsd:integer" },
+    "issuerParty": { "@id": "ukmp:issuerParty", "@type": "@id" },
+    "issueDate": { "@id": "ukmp:issueDate", "@type": "xsd:date" },
+    "lastUpdated": { "@id": "ukmp:lastUpdated", "@type": "xsd:dateTime" },
+    "composition": { "@id": "ukmp:composition", "@type": "@id" },
+    "recycledContent": { "@id": "ukmp:recycledContent", "@type": "@id" },
+    "processingHistory": { "@id": "ukmp:processingHistory", "@type": "@id" },
+    "environmentalFootprint": { "@id": "ukmp:environmentalFootprint", "@type": "@id" },
+    "ukRegulatory": { "@id": "ukmp:ukRegulatory", "@type": "@id" },
+
+    "identityLevel": "https://schema.materialspassport.org.uk/v0.2/identityLevel",
+    "productTypeRef": { "@id": "https://schema.materialspassport.org.uk/v0.2/productTypeRef", "@type": "@id" },
+    "aggregation": {
+      "@id": "https://schema.materialspassport.org.uk/v0.2/aggregation",
+      "@context": {
+        "parentRefs": { "@id": "https://schema.materialspassport.org.uk/v0.2/parentRefs", "@type": "@id", "@container": "@set" },
+        "childRefs": { "@id": "https://schema.materialspassport.org.uk/v0.2/childRefs", "@type": "@id", "@container": "@set" }
+      }
+    },
+    "lifecycle": {
+      "@id": "https://schema.materialspassport.org.uk/v0.2/lifecycle",
+      "@context": {
+        "status": "https://schema.materialspassport.org.uk/v0.2/lifecycleStatus",
+        "predecessorRefs": { "@id": "https://schema.materialspassport.org.uk/v0.2/predecessorRefs", "@type": "@id", "@container": "@set" },
+        "successorRefs": { "@id": "https://schema.materialspassport.org.uk/v0.2/successorRefs", "@type": "@id", "@container": "@set" },
+        "statusChangedAt": { "@id": "https://schema.materialspassport.org.uk/v0.2/statusChangedAt", "@type": "xsd:dateTime" }
+      }
+    },
+    "accessPolicy": {
+      "@id": "https://schema.materialspassport.org.uk/v0.2/accessPolicy",
+      "@context": {
+        "defaultTier": "https://schema.materialspassport.org.uk/v0.2/defaultTier",
+        "fieldTiers": {
+          "@id": "https://schema.materialspassport.org.uk/v0.2/fieldTiers",
+          "@container": "@set",
+          "@context": {
+            "path": "https://schema.materialspassport.org.uk/v0.2/path",
+            "tier": "https://schema.materialspassport.org.uk/v0.2/tier"
+          }
+        }
+      }
+    },
+    "fieldStatus": {
+      "@id": "https://schema.materialspassport.org.uk/v0.2/fieldStatus",
+      "@container": "@set",
+      "@context": {
+        "path": "https://schema.materialspassport.org.uk/v0.2/path",
+        "status": "https://schema.materialspassport.org.uk/v0.2/applicabilityStatus",
+        "basis": "https://schema.materialspassport.org.uk/v0.2/applicabilityBasis",
+        "reviewBy": { "@id": "https://schema.materialspassport.org.uk/v0.2/reviewBy", "@type": "xsd:date" }
+      }
+    },
+
     "Party": "ukmp:Party",
     "role": "ukmp:role",
+    "parties": { "@id": "https://schema.materialspassport.org.uk/v0.2/parties", "@container": "@set" },
+    "address": {
+      "@id": "https://schema.materialspassport.org.uk/v0.2/address",
+      "@context": {
+        "streetAddress": "https://schema.materialspassport.org.uk/v0.2/streetAddress",
+        "locality": "https://schema.materialspassport.org.uk/v0.2/locality",
+        "region": "https://schema.materialspassport.org.uk/v0.2/region",
+        "postalCode": "https://schema.materialspassport.org.uk/v0.2/postalCode",
+        "countryCode": "https://schema.materialspassport.org.uk/v0.2/countryCode"
+      }
+    },
+    "contactPoint": {
+      "@id": "https://schema.materialspassport.org.uk/v0.2/contactPoint",
+      "@context": {
+        "email": "https://schema.materialspassport.org.uk/v0.2/email",
+        "telephone": "https://schema.materialspassport.org.uk/v0.2/telephone",
+        "url": { "@id": "https://schema.materialspassport.org.uk/v0.2/url", "@type": "@id" }
+      }
+    },
     "scheme": "ukmp:scheme",
     "value": "ukmp:value",
 
@@ -55,6 +131,7 @@
     "evidenceRefs": { "@id": "ukmp:evidenceRefs", "@type": "@id", "@container": "@set" },
     "verificationStatus": "ukmp:verificationStatus",
     "verifierParty": { "@id": "ukmp:verifierParty", "@type": "@id" },
+    "feedstockSource": "https://schema.materialspassport.org.uk/v0.2/feedstockSource",
 
     "epcisEvents": { "@id": "ukmp:epcisEvents", "@container": "@list" },
     "traversable": { "@id": "ukmp:traversable", "@type": "xsd:boolean" },
@@ -91,6 +168,38 @@
     "virginDisplacementFactor": { "@id": "ukmp:virginDisplacementFactor", "@type": "@id" },
     "unit": "ukmp:unit",
     "source": "ukmp:source",
+    "declaredUnit": {
+      "@id": "https://schema.materialspassport.org.uk/v0.2/declaredUnit",
+      "@context": {
+        "quantity": { "@id": "https://schema.materialspassport.org.uk/v0.2/quantity", "@type": "xsd:decimal" },
+        "description": "https://schema.materialspassport.org.uk/v0.2/declaredUnitDescription"
+      }
+    },
+    "carbonFootprintPerDeclaredUnit": { "@id": "https://schema.materialspassport.org.uk/v0.2/carbonFootprintPerDeclaredUnit", "@type": "xsd:decimal" },
+    "indicators": {
+      "@id": "https://schema.materialspassport.org.uk/v0.2/indicators",
+      "@container": "@set",
+      "@context": {
+        "indicator": "https://schema.materialspassport.org.uk/v0.2/indicator",
+        "lifecycleStage": "https://schema.materialspassport.org.uk/v0.2/lifecycleStage",
+        "value": { "@id": "https://schema.materialspassport.org.uk/v0.2/indicatorValue", "@type": "xsd:decimal" }
+      }
+    },
+    "studyRefs": { "@id": "https://schema.materialspassport.org.uk/v0.2/studyRefs", "@type": "@id", "@container": "@set" },
+    "recycledContentDetail": {
+      "@id": "https://schema.materialspassport.org.uk/v0.2/recycledContentDetail",
+      "@container": "@set",
+      "@context": {
+        "scope": {
+          "@id": "https://schema.materialspassport.org.uk/v0.2/scope",
+          "@context": {
+            "material": "https://schema.materialspassport.org.uk/v0.2/scopeMaterial",
+            "componentRef": "https://schema.materialspassport.org.uk/v0.2/componentRef",
+            "layer": "https://schema.materialspassport.org.uk/v0.2/layer"
+          }
+        }
+      }
+    },
 
     "UkRegulatoryData": "ukmp:UkRegulatoryData",
     "ewcCode": "ukmp:ewcCode",

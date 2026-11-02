@@ -1,0 +1,15 @@
+# Redocly CLI configuration for the UK Materials Passport Exchange API.
+# Run from the repository root:  npx @redocly/cli@1 lint api/openapi.yaml --config api/redocly.yaml
+extends:
+  - recommended
+
+rules:
+  # Passport payloads are JSON-LD: open-world by design. The passport JSON
+  # Schema deliberately leaves additionalProperties unset so that sector
+  # profiles (e.g. ukmp-plastics:*) and EPCIS extension members validate.
+  # Redocly's default for this rule treats unset additionalProperties as
+  # false, which would reject every conformant sector-profile example.
+  # Keep the rule ON (as an error) but with JSON Schema semantics.
+  no-invalid-media-type-examples:
+    severity: error
+    allowAdditionalProperties: true

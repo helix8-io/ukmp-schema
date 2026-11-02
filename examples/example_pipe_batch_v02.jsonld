@@ -1,0 +1,40 @@
+{
+  "@context": [
+    "https://schema.materialspassport.org.uk/v0.2/context.jsonld"
+  ],
+  "type": "ukmp:MaterialPassport",
+  "passportId": "https://id.gs1.org/01/09506000134376/10/RDP-26-1104",
+  "subjectType": "Product",
+  "identityLevel": "batch",
+  "gs1:lgtin": "09506000134376.RDP-26-1104",
+  "productTypeRef": "https://passports.example-pipes.co.uk/passports/types/RDP-110-SN4",
+  "sectorProfile": "https://schema.materialspassport.org.uk/v0.2/profiles/construction",
+  "conformanceLevel": 1,
+  "issuerParty": {
+    "name": "Example Pipe Systems Ltd",
+    "role": "manufacturer"
+  },
+  "issueDate": "2026-11-04",
+  "description": "ILLUSTRATIVE EXAMPLE — not real company or product data. Batch passport for one production lot of the pipe type in example_pipe_producttype_v02.jsonld, showing optional productTypeRef usage: type-level data (declared performance, type GTIN) is inherited by reference; batch-level data (this lot's composition and recycled-content claim) is carried here.",
+  "composition": {
+    "materialFamily": "polymer",
+    "substances": [
+      { "name": "High-density polyethylene (recycled)", "massFraction": 0.82 },
+      { "name": "High-density polyethylene (virgin)", "massFraction": 0.155 },
+      { "name": "Carbon black masterbatch", "massFraction": 0.025 }
+    ]
+  },
+  "recycledContent": {
+    "preConsumerFraction": 0.22,
+    "postConsumerFraction": 0.60,
+    "totalRecycledFraction": 0.82,
+    "calculationMethod": "batch-segregation",
+    "chainOfCustodyModel": "segregated",
+    "feedstockSource": "mixed",
+    "evidenceType": "supplier-declaration",
+    "evidenceRefs": [
+      "https://passports.example-pipes.co.uk/declarations/RDP-26-1104.pdf"
+    ],
+    "verificationStatus": "self-declared"
+  }
+}

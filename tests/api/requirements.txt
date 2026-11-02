@@ -1,0 +1,8 @@
+# UK Materials Passport Exchange API (D2.1) test dependencies — tests/api/
+pytest>=8
+PyYAML>=6.0
+jsonschema>=4.21
+referencing>=0.35
+openapi-spec-validator>=0.7.1
+# Strict date-time assertions in jsonschema's FormatChecker
+rfc3339-validator>=0.1.4

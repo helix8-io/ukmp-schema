@@ -1,0 +1,222 @@
+{
+  "@context": [
+    "https://schema.materialspassport.org.uk/v0.2/context.jsonld",
+    "https://schema.materialspassport.org.uk/v0.1/plastics-context.jsonld"
+  ],
+  "type": "ukmp:MaterialPassport",
+  "passportId": "https://passports.example-pipes.co.uk/passports/types/RDP-110-SN4",
+  "subjectType": "ProductType",
+  "identityLevel": "productType",
+  "gs1:gtin": "09506000134376",
+  "sectorProfile": "https://schema.materialspassport.org.uk/v0.2/profiles/construction",
+  "conformanceLevel": 1,
+  "issuerParty": {
+    "name": "Example Pipe Systems Ltd",
+    "role": "manufacturer",
+    "address": {
+      "streetAddress": "3 Example Industrial Estate (illustrative)",
+      "locality": "Larne",
+      "postalCode": "BT00 0XX",
+      "countryCode": "GB"
+    },
+    "contactPoint": {
+      "email": "dpp@example-pipes.co.uk",
+      "url": "https://www.example-pipes.co.uk/products/RDP-110-SN4"
+    }
+  },
+  "parties": [
+    {
+      "name": "Example EU Representative B.V.",
+      "role": "authorised-representative",
+      "address": {
+        "streetAddress": "Voorbeeldstraat 1 (illustrative)",
+        "locality": "Rotterdam",
+        "postalCode": "3000 AA",
+        "countryCode": "NL"
+      },
+      "contactPoint": {
+        "email": "ar@example-eu-rep.co.uk"
+      }
+    }
+  ],
+  "issueDate": "2026-10-28",
+  "description": "ILLUSTRATIVE EXAMPLE — not real company or product data. Product-type passport for a recycled-HDPE non-pressure underground drainage pipe, 110 mm OD, ring stiffness class SN4 (illustrative). One passport per product type, as the construction DPP under Reg (EU) 2024/3110 is product-type level; batch passports reference it via productTypeRef (see example_pipe_batch_v02.jsonld). Declared performance characteristics (DoPC) belong to the construction profile overlay, which references EN ISO 23387 data templates rather than redefining them; they are not reproduced in the core passport. The pipe is three-layer (virgin outer and inner skins, recycled core); recycledContentDetail scopes the claim per layer and the aggregate recycledContent is the mass-weighted total. Module D is carried as an indicator, never as netAvoidedKgCo2ePerKg. Recycled-content figures are the declared minimum for the type, not a batch measurement.",
+  "composition": {
+    "materialFamily": "polymer",
+    "ukmp-plastics:polymerType": "HDPE",
+    "ukmp-plastics:colour": "black",
+    "substances": [
+      {
+        "name": "High-density polyethylene (recycled)",
+        "massFraction": 0.8
+      },
+      {
+        "name": "High-density polyethylene (virgin)",
+        "massFraction": 0.175
+      },
+      {
+        "name": "Carbon black masterbatch",
+        "massFraction": 0.025,
+        "svhcFlag": false
+      }
+    ]
+  },
+  "recycledContent": {
+    "preConsumerFraction": 0.2,
+    "postConsumerFraction": 0.6,
+    "totalRecycledFraction": 0.8,
+    "calculationMethod": "batch-segregation",
+    "chainOfCustodyModel": "segregated",
+    "feedstockSource": "mixed",
+    "evidenceType": "third-party-certificate",
+    "evidenceRefs": [
+      "https://certs.example-certifier.co.uk/certificates/EX-RC-0000-ILLUSTRATIVE"
+    ],
+    "verificationStatus": "independently-verified",
+    "verifierParty": {
+      "name": "Example Certification Body Ltd",
+      "role": "verifier"
+    }
+  },
+  "recycledContentDetail": [
+    {
+      "scope": {
+        "layer": "outer",
+        "material": "PE-HD"
+      },
+      "totalRecycledFraction": 0.0,
+      "calculationMethod": "declared",
+      "evidenceType": "supplier-declaration",
+      "verificationStatus": "self-declared"
+    },
+    {
+      "scope": {
+        "layer": "core",
+        "material": "PE-HD"
+      },
+      "preConsumerFraction": 0.25,
+      "postConsumerFraction": 0.75,
+      "totalRecycledFraction": 1.0,
+      "calculationMethod": "batch-segregation",
+      "chainOfCustodyModel": "segregated",
+      "feedstockSource": "mixed",
+      "evidenceType": "third-party-certificate",
+      "evidenceRefs": [
+        "https://certs.example-certifier.co.uk/certificates/EX-RC-0000-ILLUSTRATIVE"
+      ],
+      "verificationStatus": "independently-verified",
+      "verifierParty": {
+        "name": "Example Certification Body Ltd",
+        "role": "verifier"
+      }
+    },
+    {
+      "scope": {
+        "layer": "inner",
+        "material": "PE-HD"
+      },
+      "totalRecycledFraction": 0.0,
+      "calculationMethod": "declared",
+      "evidenceType": "supplier-declaration",
+      "verificationStatus": "self-declared"
+    }
+  ],
+  "environmentalFootprint": {
+    "carbonFootprintKgCo2ePerKg": 0.65,
+    "assessmentBoundary": "cradle-to-gate",
+    "methodology": "EN 15804+A2 (illustrative values; carbonFootprintKgCo2ePerKg covers modules A1–A3 per kg, indicators are per declared unit)",
+    "dataQualityRating": 3,
+    "primaryDataFraction": 0.6,
+    "declaredUnit": {
+      "quantity": 1,
+      "unit": "m",
+      "description": "1 m of 110 mm SN4 pipe, approx. 1.3 kg/m (illustrative)"
+    },
+    "carbonFootprintPerDeclaredUnit": 0.85,
+    "indicators": [
+      {
+        "indicator": "GWP-total",
+        "lifecycleStage": "A1-A3",
+        "value": 0.85,
+        "unit": "kg CO2e"
+      },
+      {
+        "indicator": "GWP-fossil",
+        "lifecycleStage": "A1-A3",
+        "value": 0.84,
+        "unit": "kg CO2e"
+      },
+      {
+        "indicator": "GWP-biogenic",
+        "lifecycleStage": "A1-A3",
+        "value": 0.005,
+        "unit": "kg CO2e"
+      },
+      {
+        "indicator": "GWP-luluc",
+        "lifecycleStage": "A1-A3",
+        "value": 0.001,
+        "unit": "kg CO2e"
+      },
+      {
+        "indicator": "GWP-total",
+        "lifecycleStage": "C1",
+        "value": 0.0,
+        "unit": "kg CO2e"
+      },
+      {
+        "indicator": "GWP-total",
+        "lifecycleStage": "C2",
+        "value": 0.01,
+        "unit": "kg CO2e"
+      },
+      {
+        "indicator": "GWP-total",
+        "lifecycleStage": "C3",
+        "value": 0.06,
+        "unit": "kg CO2e"
+      },
+      {
+        "indicator": "GWP-total",
+        "lifecycleStage": "C4",
+        "value": 0.002,
+        "unit": "kg CO2e"
+      },
+      {
+        "indicator": "GWP-total",
+        "lifecycleStage": "D",
+        "value": -0.55,
+        "unit": "kg CO2e"
+      },
+      {
+        "indicator": "ADP-fossil",
+        "lifecycleStage": "A1-A3",
+        "value": 21.0,
+        "unit": "MJ"
+      }
+    ],
+    "studyRefs": [
+      "https://epd.example-programme-operator.co.uk/epd/EX-EPD-0000-ILLUSTRATIVE"
+    ],
+    "verifierParty": {
+      "name": "Example EPD Verifier Ltd",
+      "role": "verifier"
+    }
+  },
+  "accessPolicy": {
+    "defaultTier": "public"
+  },
+  "fieldStatus": [
+    {
+      "path": "/environmentalFootprint",
+      "status": "conditional",
+      "basis": "Reg (EU) 2024/3110 (CPR) — environmental indicators become mandatory declared characteristics only once the harmonised technical specification for the product family requires them; declared voluntarily here",
+      "reviewBy": "2027-12-31"
+    },
+    {
+      "path": "/recycledContent/feedstockSource",
+      "status": "optional",
+      "basis": "UKMP v0.2 core — optional, sector-neutral feedstock origin class"
+    }
+  ]
+}
