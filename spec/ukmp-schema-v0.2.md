@@ -326,7 +326,8 @@ A sector profile is: (a) a named JSON-LD context adding fields, (b) enumeration 
 - **Two sectors failed their proceed thresholds as tested.**
   - Batteries: (a)+(b) coverage was 4.9 % against a threshold of ≥ 80 %, and there were 15 (d) items against a threshold of zero. The coverage rule assumes a profile already exists, and none does yet. The (d) items are what B5–B9 address.
   - Construction: the bespoke share was 74 % against a threshold of ≤ 20 %, driven by product-specific DoPC characteristics and the EN 15804 indicator block.
-  - B5–B9 remove the (d) class. They do not by themselves meet either threshold: that needs the profiles to be written. Re-running the tests against v0.2 is an open action (§10).
+  - B5–B9 remove the (d) class. They do not by themselves meet either threshold: that needs the profiles to be written.
+- **Re-run against v0.2 (2 November 2026).** The mapping tests were re-run against the v0.2 baseline (B1–B9); results are in `mapping/README.md`, "Re-run against the v0.2 baseline". All 37 (d) items re-classify as (b): zero (d) in every sector and coverage 100 %. Batteries (a)+(b) is 23.2 %, pending import of the Battery Pass profile; the construction bespoke share is 43.5 %. Both thresholds still fail until the profiles are written (§10 item 9).
 - Textiles (pilot) fitted best: 88.5 % coverage.
 
 What each profile still needs is listed below. None of the three non-plastics profiles ships a published context in v0.2.
@@ -394,7 +395,7 @@ All values in the v0.2 examples are **illustrative**; no example represents a re
 7. **(new) Pointer stability** — `fieldTiers` and `fieldStatus` pointers address the JSON form of the passport; profile changes that rename or restructure fields silently break them. Proposal for v1.0: profiles publish pointer-stable field lists.
 8. **(new) Required core fields at item and product-type level** — `composition` and `recycledContent` remain required at every identity level (strict additivity). For a repurposed battery or a product type this is workable (declared zero / declared minimum, plus `fieldStatus`) but awkward; steering to decide whether v1.0 relaxes them per `identityLevel` (a breaking change).
 
-9. **(new) Re-run the WP3 mapping tests against v0.2.** B5–B9 should move all 37 (d) items to (a)/(b). The battery coverage threshold and the construction bespoke-share threshold still fail until the profiles exist. Steering to decide whether those thresholds, as written, are the right proceed tests for sectors with no profile yet.
+9. **(new) WP3 proceed thresholds for sectors with no profile yet.** The mapping tests were re-run against v0.2 on 2 November 2026 (`mapping/README.md`, "Re-run against the v0.2 baseline"): zero (d) in all sectors and coverage 100 %, but batteries (a)+(b) is 23.2 % pending the Battery Pass profile import, and the construction bespoke share is 43.5 %. Both thresholds still fail until the profiles exist. Steering to decide whether those thresholds, as written, are the right proceed tests for sectors with no profile yet.
 
 ---
 

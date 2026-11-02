@@ -9,9 +9,9 @@ EPCIS business steps.
 | Profile | Status in v0.2 | Context file |
 |---|---|---|
 | Plastics (`ukmp-plastics`) | **Normative.** Validated with partners in WP4. | `schema/plastics-context.jsonld` |
-| Batteries (`ukmp-batteries`) | **WP3 interim.** Imports Battery Pass v1.2. Mapping tests pending. | Not yet published |
-| Textiles (`ukmp-textiles`) | **WP3 interim.** Reuses plastics profile for synthetic fibre. Mapping tests pending. | Not yet published |
-| Construction (`ukmp-construction`) | **WP3 interim.** Overlay on EN ISO 23387 data templates. Mapping tests pending. | Not yet published |
+| Batteries (`ukmp-batteries`) | **WP3 interim.** Imports Battery Pass v1.2. Mapping tests re-run on v0.2 (`mapping/README.md`). | Not yet published |
+| Textiles (`ukmp-textiles`) | **WP3 interim.** Reuses plastics profile for synthetic fibre. Mapping tests re-run on v0.2 (`mapping/README.md`). | Not yet published |
+| Construction (`ukmp-construction`) | **WP3 interim.** Overlay on EN ISO 23387 data templates. Mapping tests re-run on v0.2 (`mapping/README.md`). | Not yet published |
 
 > **WP3 interim** means: the approach is decided and worked examples exist,
 > but the attribute-by-attribute mapping tests have not been completed and no
@@ -83,11 +83,14 @@ How the core fields are used for batteries:
 | Detailed composition, dismantling info: legitimate interest only | `accessPolicy.fieldTiers` |
 | Carbon footprint not yet applicable (Art 7 methodology act not adopted) | `fieldStatus` entry with `status: not-yet-applicable`, `basis`, `reviewBy` |
 
-Mapping status: an attribute-level mapping of Battery Pass v1.2 to the core
-is in progress in `mapping/batteries_batterypass_v1.2.csv`; the feasibility
-test (share of Battery Pass attributes that map without core change) is
-pending. Until it is complete, keep battery-specific attributes in their
-Battery Pass form and use the UK core for the fields in the table above.
+Mapping status: the attribute-level mapping of Battery Pass v1.2 to the core
+(`mapping/batteries_batterypass_v1.2.csv`) was re-run against v0.2 on
+2 November 2026 — see `mapping/README.md`, "Re-run against the v0.2
+baseline": zero (d) in all sectors and coverage 100 %; batteries (a)+(b)
+23.2 % pending the Battery Pass profile import; construction bespoke share
+43.5 %. Until the `ukmp-batteries` profile is published, keep
+battery-specific attributes in their Battery Pass form and use the UK core
+for the fields in the table above.
 
 Worked example: `examples/example_battery_item_v02.jsonld` (illustrative:
 a repurposed ex-EV pack). Validate it:

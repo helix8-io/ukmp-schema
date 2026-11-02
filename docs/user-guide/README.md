@@ -63,8 +63,11 @@ valid passport from a spreadsheet.
 - **Level 3 signing is not yet implemented in the reference tooling.** The
   validator recognises signed passports but does not check signatures. See
   chapter 4 and `IMPLEMENTATION_STATUS.md`.
-- Sector profiles other than plastics are **WP3 interim** material; mapping
-  tests are pending (chapter 7).
+- Sector profiles other than plastics are **WP3 interim** material (chapter 7).
+  The mapping tests were re-run against v0.2 on 2 November 2026 — see
+  `mapping/README.md`: zero (d) in all sectors and coverage 100 %; batteries
+  (a)+(b) 23.2 % pending the Battery Pass profile import; construction
+  bespoke share 43.5 %.
 - Regulatory notes (Plastic Packaging Tax, EU Battery Regulation and so on)
   are pointers, not legal or tax advice. Check current HMRC and regulator
   guidance before relying on them.
